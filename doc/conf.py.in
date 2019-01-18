@@ -1,0 +1,43 @@
+# -*- coding: utf-8 -*-
+#
+# TRIQS documentation build configuration file
+
+import sys
+sys.path.insert(0, "@TRIQS_SPHINXEXT_PATH@/numpydoc")
+
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.mathjax',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.doctest',
+              'sphinx.ext.todo',
+              'sphinx.ext.viewcode',
+              'sphinx.ext.autosummary',
+              'plot_directive',
+              'numpydoc']
+
+source_suffix = '.rst'
+
+project = u'w2dynamics_interface'
+author = u'Dominic Bergeron'
+copyright = u'2018, Simons Foundation'
+version = ''
+
+mathjax_path = "@TRIQS_MATHJAX_PATH@/MathJax.js?config=default"
+templates_path = ['@CMAKE_SOURCE_DIR@/doc/_templates']
+
+html_theme = 'triqs'
+html_theme_path = ['@TRIQS_THEMES_PATH@']
+html_show_sphinx = False
+html_context = {'header_title': 'w2dynamics_interface',
+                'header_subtitle': 'Analytic Continuation',
+                'header_links': [['Install', 'install'],
+                                 ['Documentation', 'contents'],
+                                 ['Tutorials','tutorials'],
+                                 ['Issues', 'issues'],
+                                 ['About w2dynamics_interface', 'about']]}
+html_static_path = ['@CMAKE_SOURCE_DIR@/doc/_static']
+html_sidebars = {'index': ['sideb.html', 'searchbox.html']}
+
+htmlhelp_basename = 'w2dynamics_interface_doc'
+
+intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None), 'triqslibs': ('https://triqs.github.io/triqs/master', None)}
