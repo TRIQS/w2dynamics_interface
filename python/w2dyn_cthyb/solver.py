@@ -1,6 +1,15 @@
-from pytriqs.gf import MeshImTime,MeshImFreq, BlockGf
-import numpy as np
+""" 
+
+W2Dynamics wrapper for the Triqs library
+
+Authors: Andreas Hausoel, Hugo U. R. Strand (2019)
+
+"""
 import os, sys
+import tempfile
+import numpy as np
+
+from pytriqs.gf import MeshImTime,MeshImFreq, BlockGf
 
 import auxiliaries.CTQMC
 
@@ -105,21 +114,32 @@ class Solver():
         #print "ftau.shape", ftau.shape
         #print "ftau", ftau
 
-        
-
-        #exit(-1)
-
-
         ### now comes w2dyn!
         import dmft.impurity as impurity
         import auxiliaries.config as config
 
+        # Make a temporary files with input parameters
+        
+        Parameters_in = """#asdf
+[General]
+[Atoms]
+[[1]]
+Nd = %i
+[QMC]
+TaudiffMax = 2.0""" % norb
+
+        cfg_file = tempfile.NamedTemporaryFile(delete=False)
+        cfg_file.write(Parameters_in)
+        cfg_file.close()
+        
         ### read w2dyn parameter file; later we will replace this by a 
         ### converter of triqs-parameters to w2dyn-parameters
-        cfg_file_name="Parameters.in"
+
         key_value_args={}
-        cfg =  config.get_cfg(cfg_file_name, key_value_args, err=sys.stderr)
+        cfg =  config.get_cfg(cfg_file.name, key_value_args, err=sys.stderr)
         cfg["QMC"]["offdiag"] = 1
+
+        os.remove(cfg_file.name) # remove temp file with input parameters
 
         ### I now write the triqs parameters into the cfg file; we may later do this with dictionaries
         ### in a more sophisticated way
