@@ -9,8 +9,8 @@ import numpy as np
 import sys
 sys.path.insert(0,"../../python")
 
-#w2dyn=False
-w2dyn=True
+w2dyn=False
+#w2dyn=True
 
 ### here comes the solver
 if w2dyn:
@@ -37,6 +37,10 @@ S = Solver(beta = beta, gf_struct = [ ['up',[0]], ['down',[0]] ], n_l = 30, n_iw
 ### the hybridistation function in Matsubara
 delta_iw_block = ( V1**2 * inverse( iOmega_n - e1 ) + V2**2 * inverse( iOmega_n - e2 ) )
 
+### Initialize the non-interacting Green's function S.G0_iw
+for name, g0 in S.G0_iw: 
+    g0 << inverse ( iOmega_n - e_f - delta_iw_block )
+
 if w2dyn:
     ### generate a Delta(tau) for w2dyn
     iw_mesh = MeshImFreq(beta, 'Fermion', S.n_iw)
@@ -47,12 +51,12 @@ if w2dyn:
 
         #d << Fourier(Delta_iw[name])   # this is the same as below, but blockwise
 
-    ### we need the object for holes
+    ### w2dyn needs the object for holes
     from pytriqs.gf.tools import conjugate
     Delta_iw = conjugate(Delta_iw)
 
     ### Fourier Transform
-    S.Delta_tau << Fourier(Delta_iw)
+    S.Delta_tau_directly_passed << Fourier(Delta_iw)
 
     ### Write out F(iw) for comparison with w2dyn_dmft tools
     #from converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
