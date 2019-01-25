@@ -2,5 +2,6 @@
 [General]
 [Atoms]
 [[1]]
+Nd = 1
 [QMC]
 TaudiffMax = 2.0
