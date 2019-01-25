@@ -30,6 +30,9 @@ class Solver():
         self.tau_mesh = MeshImTime(beta, 'Fermion', n_tau)
         self.Delta_tau_directly_passed = BlockGf(mesh=self.tau_mesh, gf_struct=gf_struct)
 
+        self.tau_mesh = MeshImTime(self.beta, 'Fermion', self.n_tau)
+        self.Delta_tau= BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
+
         self.iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
         self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
 
@@ -81,38 +84,39 @@ class Solver():
         t_OO = quadratic_matrix_from_operator(self.h_int, fundamental_operators)
 
         ### sign convention, t_OO gets a minus sign
-        t_OO = -np.array(t_OO)
+        t_OO = -t_OO
 
+        ### use the extractor to get Delta(iw) and t_OO from the given G0
         from extractor import extract_deltaiw_and_tij_from_G0
         from pytriqs.gf import Fourier
-        Delta_iw, t_OO_extr = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
+        Delta_iw, t_OO_extr_list = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
 
         ### in w2dyn we need this for holes, therefore conjugate
         from pytriqs.gf.tools import conjugate
         Delta_iw = conjugate(Delta_iw)
 
-        self.tau_mesh = MeshImTime(self.beta, 'Fermion', self.n_tau)
-        self.Delta_tau= BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
         self.Delta_tau << Fourier(Delta_iw)
-        print "self.Delta_tau", self.Delta_tau
 
-        print "compare delta_tau"
+        print "compare delta_tau:"
         for block, dt in self.Delta_tau:
             d1 = self.Delta_tau[block].data
             d2 = self.Delta_tau_directly_passed[block].data
             np.testing.assert_array_almost_equal(d1,d2)
 
-        print "compare t_OO"
-
-        if len(t_OO_extr) != 2:
+        print "compare t_OO:"
+        if len(t_OO_extr_list) != 2:
             raise Exception("For now t_OO has to contain exactly 2 blocks!")
         from scipy.linalg import block_diag
-        t_OO_ = block_diag(t_OO_extr[0],t_OO_extr[1])
-        #print "t_OO ", t_OO
-        #print "t_OO_", t_OO_
-        np.testing.assert_array_almost_equal(t_OO,t_OO_)
+        ### merge blocks into one big matrix
+        t_OO_extr = block_diag(t_OO_extr_list[0],t_OO_extr_list[1])
 
-        #exit()
+        np.testing.assert_array_almost_equal(t_OO,t_OO_extr)
+
+        ### sign convention, t_OO gets a minus sign
+        t_OO_extr = -t_OO_extr
+
+        ### we want to use the one extracted
+        t_OO = t_OO_extr
 
         ### Andi: the definition in the U-Matrix in w2dyn is
         ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k

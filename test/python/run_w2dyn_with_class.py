@@ -9,8 +9,8 @@ import numpy as np
 import sys
 sys.path.insert(0,"../../python")
 
-w2dyn=False
-#w2dyn=True
+#w2dyn=False
+w2dyn=True
 
 ### here comes the solver
 if w2dyn:
@@ -57,36 +57,6 @@ if w2dyn:
 
     ### Fourier Transform
     S.Delta_tau_directly_passed << Fourier(Delta_iw)
-
-    ### Write out F(iw) for comparison with w2dyn_dmft tools
-    #from converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
-    fiw, _, __ = triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(Delta_iw)
-    data = np.column_stack((np.real(fiw[:,0,0,0,0]),np.imag(fiw[:,0,0,0,0])))
-    np.savetxt("fiw_00.dat",data)
-    data = np.column_stack((np.real(fiw[:,0,1,0,1]),np.imag(fiw[:,0,1,0,1])))
-    np.savetxt("fiw_11.dat",data)
-    #exit()
-
-else:
-
-   # Initialize the non-interacting Green's function S.G0_iw
-   for name, g0 in S.G0_iw: 
-       g0 << inverse ( iOmega_n - e_f - delta_iw_block )
-       
-   #from pytriqs.plot.mpl_interface import oplot, oploti, oplotr, plt
-   #oplot(S.G0_iw)
-   #plt.show()
-
-   ### Write out F(iw) for comparison with w2dyn_dmft tools
-   #from converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
-   G0_iw, _, __ = triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(S.G0_iw)
-   data = np.column_stack((np.real(G0_iw[:,0,0,0,0]),np.imag(G0_iw[:,0,0,0,0])))
-   np.savetxt("G0_triqs_00.dat",data)
-   data = np.column_stack((np.real(G0_iw[:,0,1,0,1]),np.imag(G0_iw[:,0,1,0,1])))
-   np.savetxt("G0_triqs_11.dat",data)
-
-   #exit()
-    
 
 ### Run the solver. The results will be in S.G_tau, S.G_iw and S.G_l
 if w2dyn:

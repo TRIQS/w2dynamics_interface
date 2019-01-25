@@ -89,7 +89,8 @@ if __name__ == '__main__':
     print " "
     print "compare H_loc:"
     for i,j in zip(H_loc_original,H_loc_reconst):
-        print "maxval(i-j)", np.max(i-j)
+        print "np.max(i-j)", np.max(i-j)
+        print "np.min(i-j)", np.min(i-j)
 
     print " "
     print "compare delta:"
