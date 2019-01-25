@@ -67,10 +67,17 @@ class Solver():
         ### extract t_ij and U_ijkl from gf_struct
         #print "extract t_ij and U_ijkl from gf_struct... "
         t_OO = quadratic_matrix_from_operator(self.h_int, fundamental_operators)
-        U_OOOO = quartic_tensor_from_operator(self.h_int, fundamental_operators, perm_sym=False)
+
+        ### Andi: the definition in the U-Matrix in w2dyn is
+        ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k
+        ###                                         !   !
+        ### a factor of 2 is needed to compensate the 1/2, and a minus for 
+        ### exchange of the annihilators; is this correct for any two particle interaction term?
+        U_OOOO = quartic_tensor_from_operator(self.h_int, fundamental_operators, perm_sym=True)
+        U_OOOO *= -2.0
 
         ### the U tensor is not correct!
-        #print "U_OOOO", U_OOOO
+        #print "U_OOOO"
         #for i in range(0,2):
             #for j in range(0,2):
                 #for k in range(0,2):
@@ -78,11 +85,6 @@ class Solver():
                         #print i,j,k,l, U_OOOO[i,j,k,l]
         
         #exit()
-
-        ### TODO fix generation of U-Matrix; here it is hardcoded for U=1
-        U_OOOO[...] = 0.0
-        U_OOOO[0,1,0,1] = 1.0
-        U_OOOO[1,0,1,0] = 1.0
 
         ### transform t_ij from (f,f) to (o,s,o,s) format
         from converters import NO_to_Nos
