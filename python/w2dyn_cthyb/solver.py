@@ -85,7 +85,7 @@ class Solver():
         U_OOOO[1,0,1,0] = 1.0
 
         ### transform t_ij from (f,f) to (o,s,o,s) format
-        from example import NO_to_Nos
+        from converters import NO_to_Nos
         t_osos = NO_to_Nos(t_OO, spin_first=True)
         #t_osos *= -1.0
         #print "t_osos", t_osos
@@ -96,7 +96,7 @@ class Solver():
         ### TODO: triqs solver takes G0 and converts it into F(iw) and F(tau)
         ### but we directly need F(tau)
 
-        from example import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
+        from converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
 
         ftau, _, __ = triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(self.Delta_tau)
 

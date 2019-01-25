@@ -4,6 +4,11 @@ from pytriqs.archive import HDFArchive
 import pytriqs.utility.mpi as mpi
 import numpy as np
 
+### until we install the interace into triqs installation
+### we add the path to the w2dyn_cthyb manually:
+import sys
+sys.path.insert(0,"../../python")
+
 #w2dyn=False
 w2dyn=True
 
@@ -12,6 +17,8 @@ if w2dyn:
    from w2dyn_cthyb import Solver
 else:
    from triqs_cthyb import Solver
+
+from w2dyn_cthyb.converters import *
 
 ### Parameters
 U = 1.0
@@ -48,7 +55,7 @@ if w2dyn:
     S.Delta_tau << Fourier(Delta_iw)
 
     ### Write out F(iw) for comparison with w2dyn_dmft tools
-    from example import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
+    #from converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
     fiw, _, __ = triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(Delta_iw)
     data = np.column_stack((np.real(fiw[:,0,0,0,0]),np.imag(fiw[:,0,0,0,0])))
     np.savetxt("fiw_00.dat",data)
@@ -67,7 +74,7 @@ else:
    #plt.show()
 
    ### Write out F(iw) for comparison with w2dyn_dmft tools
-   from example import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
+   #from converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
    G0_iw, _, __ = triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(S.G0_iw)
    data = np.column_stack((np.real(G0_iw[:,0,0,0,0]),np.imag(G0_iw[:,0,0,0,0])))
    np.savetxt("G0_triqs_00.dat",data)

@@ -1,0 +1,6 @@
+#asdf
+[General]
+[Atoms]
+[[1]]
+[QMC]
+TaudiffMax = 2.0
