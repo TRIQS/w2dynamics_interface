@@ -1,3 +1,5 @@
+# Here we will get a rebase conflict
+# This will change stuff
 
 from pytriqs.gf import *
 from pytriqs.archive import HDFArchive
