@@ -4,11 +4,6 @@ from pytriqs.archive import HDFArchive
 import pytriqs.utility.mpi as mpi
 import numpy as np
 
-### until we install the interace into triqs installation
-### we add the path to the w2dyn_cthyb manually:
-import sys
-sys.path.insert(0,"../../python")
-
 #w2dyn=False
 w2dyn=True
 
