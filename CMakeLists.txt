@@ -1,6 +1,7 @@
 # Start configuration
 cmake_minimum_required(VERSION 2.8.12)
 project(w2dynamics_interface CXX)
+set(W2DYNAMICS_INTERFACE_VERSION 1.0.0)
 if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif()
@@ -28,8 +29,8 @@ if(NOT W2DYNAMICS_INTERFACE_VERSION)
   set(W2DYNAMICS_INTERFACE_VERSION 1.0)
 endif()
 
-#add_subdirectory(w2dynamics)
-add_subdirectory(python)
+# The python interface
+add_subdirectory(python/w2dyn_cthyb)
 
 # Tests
 option(Build_Tests "Build tests" ON)
@@ -38,6 +39,7 @@ if(Build_Tests)
   add_subdirectory(test/python)
 endif()
 
+# Documentation
 option(Build_Documentation "Build documentation" OFF)
 if(Build_Documentation)
   find_package(MathJax REQUIRED)
@@ -50,6 +52,7 @@ if(Build_Documentation)
   endif()
 endif()
 
+# Build a debian package
 option(BUILD_DEBIAN_PACKAGE "Build a deb package" OFF)
 if(BUILD_DEBIAN_PACKAGE)
   if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/usr")
