@@ -25,9 +25,16 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR (NOT IS_ABSOLUTE ${CMAKE_INSTA
 endif()
 message(STATUS "-------- INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX} --------")
 
-if(NOT W2DYNAMICS_INTERFACE_VERSION)
-  set(W2DYNAMICS_INTERFACE_VERSION 1.0)
-endif()
+# build w2dynamics as an external project
+include(ExternalProject)
+set(W2DYN_ROOT ${CMAKE_INSTALL_PREFIX})
+ExternalProject_Add(w2dynamics_project
+  PREFIX w2dynamics
+  GIT_REPOSITORY https://github.com/wentzell/w2dynamics
+  GIT_TAG cmake_adjustments
+  GIT_CONFIG advice.detachedHead=false
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+)
 
 # The python interface
 add_subdirectory(python/w2dyn_cthyb)
