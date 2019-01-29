@@ -1,6 +1,6 @@
 # Start configuration
 cmake_minimum_required(VERSION 2.8.12)
-project(w2dynamics_interface CXX)
+project(w2dynamics_interface Fortran CXX)
 set(W2DYNAMICS_INTERFACE_VERSION 1.0.0)
 if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
@@ -25,7 +25,12 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR (NOT IS_ABSOLUTE ${CMAKE_INSTA
 endif()
 message(STATUS "-------- INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX} --------")
 
-# build w2dynamics as an external project
+# --- Build w2dynamics as an external project
+get_property(BLAS_LAPACK_LIBRARIES TARGET triqs::blas_lapack PROPERTY INTERFACE_LINK_LIBRARIES)
+get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES)
+message(STATUS "Blas/Lapack Libraries: ${BLAS_LAPACK_LIBRARIES}")
+message(STATUS "FFTW Libraries: ${FFTW_LIBRARIES}")
+
 include(ExternalProject)
 set(W2DYN_ROOT ${CMAKE_INSTALL_PREFIX})
 ExternalProject_Add(w2dynamics_project
@@ -33,7 +38,15 @@ ExternalProject_Add(w2dynamics_project
   GIT_REPOSITORY https://github.com/wentzell/w2dynamics
   GIT_TAG cmake_adjustments
   GIT_CONFIG advice.detachedHead=false
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+  	     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+	     -DPYTHON_EXECUTABLE=${TRIQS_PYTHON_INTERPRETER}
+	     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+	     -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+	     -DBLAS_LIBRARIES=${BLAS_LAPACK_LIBRARIES}
+	     -DLAPACK_LIBRARIES=${BLAS_LAPACK_LIBRARIES}
+	     -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
+	     -DNFFT_ROOT=${NFFT_ROOT}
 )
 
 # The python interface
