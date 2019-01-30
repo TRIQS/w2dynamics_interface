@@ -258,10 +258,10 @@ TaudiffMax = 2.0""" % norb
         result = solver.solve(iter_no, mccfgcontainer)
 
         gtau = result.other["gtau-full"]
-        n_tau = gtau.shape[-1]
 
-        tau_mesh = MeshImTime(self.beta, 'Fermion', n_tau)
-        self.G_tau = BlockGf(mesh=tau_mesh, gf_struct=self.gf_struct)
+        ### here comes the function for conversion w2dyn --> triqs
+        from converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
+        self.G_tau = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, self.n_tau, self.beta, self.gf_struct)
 
         giw = result.giw
         giw = giw.transpose(1,2,3,4,0)
@@ -269,12 +269,6 @@ TaudiffMax = 2.0""" % norb
 
         iw_mesh = MeshImFreq(self.beta, 'Fermion', n_iw)
         self.G_iw = BlockGf(mesh=iw_mesh, gf_struct=self.gf_struct)
-    
-        for spin, (name, g_tau) in enumerate(self.G_tau):
-
-            ### in w2dyn the diagonal of the GF is positive
-            g_tau.data[:] = -np.transpose(gtau[:, spin, :, spin, :], (2, 0, 1)) 
-
         for spin, (name, g_iw) in enumerate(self.G_iw):
 
             ### in w2dyn the diagonal of the GF is positive

@@ -150,6 +150,60 @@ def triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(G_tau):
     return g_tosos, beta, ntau
 
 # ----------------------------------------------------------------------    
+def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, n_tau, beta, gf_struct):
+
+    """ Convert a W2Dynamics ndarray format with indices [tosos]
+    where t is time, o is orbital, s is spin index
+    to a spin-block Triqs imaginary time response function 
+
+    Takes: 
+    gtau : Green function as numpy array
+    beta : inverse temperature
+    ntau : number of tau points (including tau=0 and beta) 
+
+    Returns: 
+    BlockGF : triqs block Green function the response function data
+
+    Author: Hugo U. R. Strand (2019) """
+
+    ### check number of tau points is correct and as last dimension
+    n_tau_check = gtau.shape[-1]
+    assert n_tau_check == n_tau
+
+    ### check if gtau is 3 or 5 dimensional, and make it 3 dimensional
+    if len(gtau.shape) == 5:
+        norbs = gtau.shape[0]
+        nspin = gtau.shape[1]
+        nflavour = norbs * nspin
+        gtau = gtau.reshape(nflavour, nflavour, n_tau)
+    elif len(gtau.shape) == 3:
+        nflavour = gtau.shape[0]
+    else: 
+       raise Exception("gtau array must be 3 or 5 dimensional with tau as last dimension!")
+
+    ### generate triqs Green function with same dimension than
+    ### the input; this may not be a good idea if worm is used
+    ### since then the output can have another structure...
+    from pytriqs.gf import MeshImTime, BlockGf
+    tau_mesh = MeshImTime(beta, 'Fermion', n_tau)
+    G_tau = BlockGf(mesh=tau_mesh, gf_struct=gf_struct)
+
+    ### read out blocks from full w2dyn matrices
+    offset = 0
+    for name, g_tau in G_tau:
+
+        size1 = G_tau[name].data.shape[-1]
+        size2 = G_tau[name].data.shape[-2]
+        assert( size1 == size2 )
+        size_block = size1
+        gtau_block = gtau[offset:offset+size_block, offset:offset+size_block, :]
+        g_tau.data[:] = -gtau_block.transpose(2, 0, 1)
+
+        offset += size_block
+
+    return G_tau
+
+# ----------------------------------------------------------------------    
 def triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G_iw):
 
     """ Convert a spin-block Triqs imaginary frequenca response function 
