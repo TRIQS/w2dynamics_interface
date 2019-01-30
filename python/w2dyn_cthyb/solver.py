@@ -209,8 +209,8 @@ TaudiffMax = 2.0""" % norb
 
         ### generate dummy input that we don't necessarily need
         niw     = 2*cfg["QMC"]["Niw"]
-        g0inviw = np.zeros(shape=(self.n_iw, norb, 2, norb, 2))
-        fiw     = np.zeros(shape=(self.n_iw, norb, 2, norb, 2))
+        g0inviw = np.zeros(shape=(2*self.n_iw, norb, 2, norb, 2))
+        fiw     = np.zeros(shape=(2*self.n_iw, norb, 2, norb, 2))
         fmom    = np.zeros(shape=(2, norb, 2, norb, 2))
         symmetry_moves = ()
         paramag = True
@@ -265,11 +265,6 @@ TaudiffMax = 2.0""" % norb
 
         giw = result.giw
         giw = giw.transpose(1,2,3,4,0)
-        n_iw = giw.shape[-1]/2
 
-        iw_mesh = MeshImFreq(self.beta, 'Fermion', n_iw)
-        self.G_iw = BlockGf(mesh=iw_mesh, gf_struct=self.gf_struct)
-        for spin, (name, g_iw) in enumerate(self.G_iw):
-
-            ### in w2dyn the diagonal of the GF is positive
-            g_iw.data[:] = np.transpose(giw[:, spin, :, spin, :], (2, 0, 1)) 
+        from converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
+        self.G_iw = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, self.n_iw, self.beta, self.gf_struct)
