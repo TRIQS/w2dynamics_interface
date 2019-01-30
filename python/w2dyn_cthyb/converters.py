@@ -111,21 +111,41 @@ def triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(G_tau):
 
     Author: Hugo U. R. Strand (2019) """
 
+    ### test gf object
+    full_size = 0
+    for name, g in G_tau:
+        size_block = g.data.shape[-1]
+        full_size += size_block
+
+    assert full_size % 2 == 0, "Number of flavours cannot be odd in w2dyn_cthyb!"
+
     beta = G_tau.mesh.beta
     tau = np.array([ float(t) for t in G_tau.mesh ])
     ntau = len(tau)
     np.testing.assert_almost_equal(tau[-1], beta)
     
     g_stoo = np.array([ g_tau.data for block_name, g_tau in G_tau ])
-    ns, nt, no, nop = g_stoo.shape
+    nblocks, nt, size1, size2 = g_stoo.shape
 
-    assert( no == nop )
-    assert( ns == 2 )
-    
-    g_tosos = np.zeros((nt, no, ns, no, ns), dtype=g_tau.data.dtype)
+    assert( size1 == size2 )
 
-    for s in xrange(ns):
-        g_tosos[:, :, s, :, s] = g_stoo[s]
+    ### the general back-conversion of the numpy arrays to triqs objects will
+    ### anyway be ugly, therefore it does not matter for this 
+    ### conversion either....
+
+    g_tff = np.zeros(shape=(ntau,full_size,full_size),dtype=g_tau.data.dtype)
+
+    ### make one big blockdiagonal matrix 
+    offset = 0
+    for nb in range(nblocks):
+
+        size_block = g_stoo[nb,:,:,:].shape[-1]
+        g_tff[:,offset:offset+size_block,offset:offset+size_block] = g_stoo[nb,:,:,:]
+
+        offset += size_block
+
+    ### shape into spin structure
+    g_tosos = g_tff.reshape(ntau,full_size/2,2,full_size/2,2)
 
     return g_tosos, beta, ntau
 
@@ -143,23 +163,43 @@ def triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G_iw):
 
     Author: Hugo U. R. Strand (2019) """
 
+    ### test gf object
+    full_size = 0
+    for name, g in G_iw:
+        size_block = g.data.shape[-1]
+        full_size += size_block
+
+    assert full_size % 2 == 0, "Number of flavours cannot be odd in w2dyn_cthyb!"
+
     beta = G_iw.mesh.beta
     iw = np.array([ np.real(w) + 1.0j*np.imag(w) for w in G_iw.mesh ])
     niw = len(iw)
     np.testing.assert_almost_equal(np.imag(iw[niw/2]) * beta, np.pi)
     
-    g_swoo = np.array([ g_iw.data for block_name, g_iw in G_iw ])
-    ns, nw, no, nop = g_swoo.shape
+    g_stoo = np.array([ G_iw.data for block_name, G_iw in G_iw ])
+    nblocks, nt, size1, size2 = g_stoo.shape
 
-    assert( no == nop )
-    assert( ns == 2 )
-    
-    g_wosos = np.zeros((nw, no, ns, no, ns), dtype=g_iw.data.dtype)
+    assert( size1 == size2 )
 
-    for s in xrange(ns):
-        g_wosos[:, :, s, :, s] = g_swoo[s]
+    ### the general back-conversion of the numpy arrays to triqs objects will
+    ### anyway be ugly, therefore it does not matter for this 
+    ### conversion either....
 
-    return g_wosos, beta, niw
+    g_tff = np.zeros(shape=(niw,full_size,full_size),dtype=G_iw.data.dtype)
+
+    ### make one big blockdiagonal matrix 
+    offset = 0
+    for nb in range(nblocks):
+
+        size_block = g_stoo[nb,:,:,:].shape[-1]
+        g_tff[:,offset:offset+size_block,offset:offset+size_block] = g_stoo[nb,:,:,:]
+
+        offset += size_block
+
+    ### shape into spin structure
+    g_tosos = g_tff.reshape(niw,full_size/2,2,full_size/2,2)
+
+    return g_tosos, beta, niw
 
 # ----------------------------------------------------------------------    
 #if __name__ == '__main__':
