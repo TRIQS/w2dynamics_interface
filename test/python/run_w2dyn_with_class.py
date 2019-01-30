@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from pytriqs.gf import *
 from pytriqs.operators import *
 from pytriqs.archive import HDFArchive

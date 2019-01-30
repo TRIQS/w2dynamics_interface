@@ -10,6 +10,7 @@ import tempfile
 import numpy as np
 
 from pytriqs.gf import MeshImTime,MeshImFreq, BlockGf
+import pytriqs.utility.mpi as mpi
 
 import auxiliaries.CTQMC
 
@@ -35,7 +36,6 @@ class Solver():
 
         self.iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
         self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
-
 
     def solve(self, **params_kw):
 
@@ -202,10 +202,10 @@ TaudiffMax = 2.0""" % norb
         #exit(-1)
 
         ### initialize the solver; it needs the config-string
-        Nseed = 1
+        Nseed = 1 + mpi.rank
         use_mpi = False
         mpi_comm = None
-        solver = impurity.CtHybSolver(cfg, Nseed, 0,0,0, not use_mpi, mpi_comm)
+        solver = impurity.CtHybSolver(cfg, Nseed, 0,0,0, False, mpi_comm)
 
         ### generate dummy input that we don't necessarily need
         niw     = 2*cfg["QMC"]["Niw"]
