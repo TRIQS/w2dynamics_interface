@@ -231,6 +231,12 @@ TaudiffMax = 2.0""" % norb
 
         print " "
         print "...................................................."
+
+        ### hardcode the set of conserved quantities to number of electrons
+        ### and activate the automatic minimalisation procedure of blocks 
+        ### ( QN "All" does this)
+        imp_problem.interaction.quantum_numbers = ( "Nt", "All" )
+
         ### feed impurity problem into solver
         solver.set_problem(imp_problem)
 
