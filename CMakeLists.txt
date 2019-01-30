@@ -15,8 +15,7 @@ endif()
 message( STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
 # Load Dependencies
-find_package(TRIQS 2.0 REQUIRED)
-find_package(Cpp2Py REQUIRED)
+find_package(TRIQS 2.2 REQUIRED)
 
 # Default Install directory to TRIQS_ROOT if not given or invalid.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR (NOT IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX}))
@@ -28,13 +27,11 @@ message(STATUS "-------- INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX} --------")
 # --- Build w2dynamics as an external project
 get_property(BLAS_LAPACK_LIBRARIES TARGET triqs::blas_lapack PROPERTY INTERFACE_LINK_LIBRARIES)
 get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES)
-message(STATUS "Blas/Lapack Libraries: ${BLAS_LAPACK_LIBRARIES}")
-message(STATUS "FFTW Libraries: ${FFTW_LIBRARIES}")
 
 include(ExternalProject)
 set(W2DYN_ROOT ${CMAKE_INSTALL_PREFIX})
-ExternalProject_Add(w2dynamics_project
-  PREFIX w2dynamics
+ExternalProject_Add(w2dyn
+  PREFIX w2dyn_project
   GIT_REPOSITORY https://github.com/wentzell/w2dynamics
   GIT_TAG cmake_adjustments
   GIT_CONFIG advice.detachedHead=false
@@ -47,7 +44,11 @@ ExternalProject_Add(w2dynamics_project
 	     -DLAPACK_LIBRARIES=${BLAS_LAPACK_LIBRARIES}
 	     -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
 	     -DNFFT_ROOT=${NFFT_ROOT}
+  INSTALL_COMMAND ""
 )
+set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dyn)
+install(DIRECTORY ${W2DYN_ROOT}/auxiliaries ${W2DYN_ROOT}/dmft ${W2DYN_ROOT}/maxent DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT}/w2dyn FILES_MATCHING PATTERN "*.py" PATTERN "*.so" PATTERN "configspec")
+install(FILES __init__.py DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT}/w2dyn)
 
 # The python interface
 add_subdirectory(python/w2dyn_cthyb)
