@@ -41,7 +41,7 @@ class Solver():
 
         depr_params = dict(
             measure_g_tau='measure_G_tau',
-            measure_g_l='measure_G_l',
+            #measure_g_l='measure_G_l',
             )
 
         for key in depr_params.keys():
@@ -54,7 +54,7 @@ class Solver():
         #n_cycles = params_kw.pop("n_cycles", True)
         #print "params_kw", params_kw
         self.n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
-        self.measure_G_l = params_kw.pop("measure_G_l")
+        #self.measure_G_l = params_kw.pop("measure_G_l")
         self.n_warmup_cycles = params_kw.pop("n_warmup_cycles")
         self.length_cycle = params_kw.pop("length_cycle")
         self.h_int = params_kw.pop("h_int")
@@ -223,12 +223,6 @@ TaudiffMax = 2.0""" % norb
         ftau = np.real(ftau)
         muimp = np.real(t_osos)
         U_OOOO = np.real(U_OOOO)
-
-        #print "ftau.shape", ftau.shape
-        #print "ftau", ftau
-        ### I save it to compare with w2dyn-dmft tools
-        np.savetxt("ftau_00.dat",ftau[:,0,0,0,0])
-        np.savetxt("ftau_11.dat",ftau[:,0,1,0,1])
 
         ### here the properties of the impurity will be defined
         imp_problem = impurity.ImpurityProblem(
