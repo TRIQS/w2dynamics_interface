@@ -11,11 +11,11 @@ import numpy as np
 
 from pytriqs.gf import MeshImTime,MeshImFreq, BlockGf
 
-import w2dyn.auxiliaries.CTQMC
+import auxiliaries.CTQMC
 
 ### here come the necessary imports form w2dyn dmft loop
-import w2dyn.dmft.impurity as impurity
-import w2dyn.auxiliaries.config as config
+import dmft.impurity as impurity
+import auxiliaries.config as config
 
 class Solver():
     
@@ -156,8 +156,8 @@ class Solver():
         #print "ftau", ftau
 
         ### now comes w2dyn!
-        import w2dyn.dmft.impurity as impurity
-        import w2dyn.auxiliaries.config as config
+        import dmft.impurity as impurity
+        import auxiliaries.config as config
 
         # Make a temporary files with input parameters
         
