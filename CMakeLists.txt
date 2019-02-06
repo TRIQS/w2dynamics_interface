@@ -48,6 +48,7 @@ ExternalProject_Add(w2dyn
 )
 set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dyn)
 install(DIRECTORY ${W2DYN_ROOT}/auxiliaries ${W2DYN_ROOT}/dmft ${W2DYN_ROOT}/maxent DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT}/w2dyn FILES_MATCHING PATTERN "*.py" PATTERN "*.so" PATTERN "configspec")
+install(FILES ${W2DYN_ROOT}/__init__.py DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT}/w2dyn)
 
 # The python interface
 add_subdirectory(python/w2dyn_cthyb)
