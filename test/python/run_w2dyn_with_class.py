@@ -6,8 +6,8 @@ from pytriqs.archive import HDFArchive
 import pytriqs.utility.mpi as mpi
 import numpy as np
 
-#w2dyn=False
-w2dyn=True
+w2dyn=False
+#w2dyn=True
 
 ### here comes the solver
 if w2dyn:
