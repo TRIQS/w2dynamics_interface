@@ -39,24 +39,9 @@ class Solver():
 
     def solve(self, **params_kw):
 
-        depr_params = dict(
-            measure_g_tau='measure_G_tau',
-            #measure_g_l='measure_G_l',
-            )
-
-        for key in depr_params.keys():
-            if key in params_kw.keys():
-                print 'WARNING: cthyb.solve parameter %s is deprecated use %s.' % \
-                    (key, depr_params[key])
-                val = params_kw.pop(key)
-                params_kw[depr_params[key]] = val
-
-        #n_cycles = params_kw.pop("n_cycles", True)
-        #print "params_kw", params_kw
         self.n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
-        #self.measure_G_l = params_kw.pop("measure_G_l")
-        self.n_warmup_cycles = params_kw.pop("n_warmup_cycles")
-        self.length_cycle = params_kw.pop("length_cycle")
+        self.n_warmup_cycles = params_kw.pop("n_warmup_cycles", 100000) ### default
+        self.length_cycle = params_kw.pop("length_cycle", 50)
         self.h_int = params_kw.pop("h_int")
         
         #### load stuff from pyed
@@ -166,6 +151,7 @@ class Solver():
 [Atoms]
 [[1]]
 Nd = %i
+Hamiltonian = Kanamori
 [QMC]
 TaudiffMax = 2.0""" % norb
 
@@ -179,6 +165,11 @@ TaudiffMax = 2.0""" % norb
         key_value_args={}
         cfg =  config.get_cfg(cfg_file.name, key_value_args, err=sys.stderr)
         cfg["QMC"]["offdiag"] = 1
+	
+	### in case of the complex
+	#cfg["QMC"]["complex"] = 1
+	#cfg["QMC"]["use_phase"] = 1
+	cfg["QMC"]["Percentage4OperatorMove"] = 0.005
 
         os.remove(cfg_file.name) # remove temp file with input parameters
 
@@ -195,8 +186,10 @@ TaudiffMax = 2.0""" % norb
         cfg["QMC"]["Nmeas"] = self.n_cycles
         cfg["QMC"]["Ncorr"] = self.length_cycle
 
+        #cfg["QMC"]["statesampling"] = 1
         #for name in cfg["QMC"]:
             #print name, " = ", cfg["QMC"][name]
+        cfg["General"]["FFType"] = "plain-full"
 
         #print "cfg", cfg
         #exit(-1)
@@ -204,7 +197,7 @@ TaudiffMax = 2.0""" % norb
         ### initialize the solver; it needs the config-string
         Nseed = 1 + mpi.rank
         use_mpi = False
-        mpi_comm = None
+        mpi_comm = mpi.world
         solver = impurity.CtHybSolver(cfg, Nseed, 0,0,0, False, mpi_comm)
 
         ### generate dummy input that we don't necessarily need
@@ -225,10 +218,16 @@ TaudiffMax = 2.0""" % norb
         U_OOOO = np.real(U_OOOO)
 
         ### here the properties of the impurity will be defined
-        imp_problem = impurity.ImpurityProblem(
-                        self.beta, g0inviw, fiw, fmom, ftau,
-                        muimp, atom.dd_int, None, None, symmetry_moves,
-                        paramag)
+	### impurity problem for real code:
+	imp_problem = impurity.ImpurityProblem(
+			self.beta, g0inviw, fiw, fmom, ftau,
+			muimp, atom.dd_int, None, None, symmetry_moves,
+			paramag)
+	#### impurity problem for complex code:
+        #imp_problem = impurity.ImpurityProblem(
+                        #self.beta, g0inviw, fiw, fmom, ftau,
+                        #muimp, muimp, atom.dd_int, None, None, symmetry_moves,
+                        #paramag)
 
         print " "
         print "...................................................."
@@ -236,7 +235,10 @@ TaudiffMax = 2.0""" % norb
         ### hardcode the set of conserved quantities to number of electrons
         ### and activate the automatic minimalisation procedure of blocks 
         ### ( QN "All" does this)
-        imp_problem.interaction.quantum_numbers = ( "Nt", "All" )
+	imp_problem.interaction.quantum_numbers = ( "Nt", "All" )
+        #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt", "Qzt" ) 
+	#imp_problem.interaction.quantum_numbers = ( "Nt", "Szt" )
+	#imp_problem.interaction.quantum_numbers = ( "Nt" )
 
         ### feed impurity problem into solver
         solver.set_problem(imp_problem)
@@ -249,7 +251,10 @@ TaudiffMax = 2.0""" % norb
         ### solve impurity problem 
         mccfgcontainer = []
         iter_no = 1
-        result = solver.solve(iter_no, mccfgcontainer)
+	### for real
+	result = solver.solve(iter_no, mccfgcontainer)
+	### for complex
+        #result = solver.solve(mccfgcontainer)
 
         gtau = result.other["gtau-full"]
 
