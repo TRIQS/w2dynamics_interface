@@ -312,6 +312,39 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, n_iw, beta, gf_struct):
 
     return G_iw
 
+def exchange_fastest_running_index_ff(array):
+
+    assert len(array.shape) == 2, "length of array must be 2, but is %i" %len(array)
+
+    t1 = array.shape[0]
+    t2 = array.shape[1]
+
+    assert t1 == t2
+    nflav = t1
+
+    array = array.reshape(nflav/2, 2, nflav/2, 2)
+    array = array.transpose(1, 0, 3, 2)
+    array = array.reshape(nflav, nflav)
+
+    return array
+
+def exchange_fastest_running_index_ffw(array):
+
+    assert len(array.shape) == 3, "length of array must be 3, but is %i" %len(array)
+
+    t1 = array.shape[0]
+    t2 = array.shape[1]
+    Niw = array.shape[2]
+
+    assert t1 == t2
+    nflav = t1
+
+    array = array.reshape(nflav/2, 2, nflav/2, 2, Niw)
+    array = array.transpose(1, 0, 3, 2, 4)
+    array = array.reshape(nflav, nflav, Niw)
+
+    return array
+
 # ----------------------------------------------------------------------    
 #if __name__ == '__main__':
 def generate_testimpurity_with_triqs(norb, ntau, beta):
