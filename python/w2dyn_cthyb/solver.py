@@ -37,6 +37,8 @@ class Solver():
         self.iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
         self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
 
+        self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
+
     def solve(self, **params_kw):
 
         self.n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
@@ -262,8 +264,15 @@ TaudiffMax = 2.0""" % norb
         from converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
         self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, self.n_tau, self.beta, self.gf_struct)
 
-        giw = result.giw
-        giw = giw.transpose(1,2,3,4,0)
+        ### I will try to use the FFT from triqs here...
 
-        from converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
-        self.G_iw = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, self.n_iw, self.beta, self.gf_struct)
+        try:
+            self.G_iw << Fourier(self.G_tau)
+        except:
+
+            giw = result.giw
+            giw = giw.transpose(1,2,3,4,0)
+
+            from converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
+            self.G_iw = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, self.n_iw, self.beta, self.gf_struct)
+
