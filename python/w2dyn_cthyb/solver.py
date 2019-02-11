@@ -260,7 +260,7 @@ TaudiffMax = 2.0""" % norb
 
         ### here comes the function for conversion w2dyn --> triqs
         from converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
-        self.G_tau = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, self.n_tau, self.beta, self.gf_struct)
+        self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, self.n_tau, self.beta, self.gf_struct)
 
         giw = result.giw
         giw = giw.transpose(1,2,3,4,0)

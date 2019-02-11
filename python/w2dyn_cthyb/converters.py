@@ -186,22 +186,36 @@ def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, n_tau, beta, gf_struct):
     ### since then the output can have another structure...
     from pytriqs.gf import MeshImTime, BlockGf
     tau_mesh = MeshImTime(beta, 'Fermion', n_tau)
-    G_tau = BlockGf(mesh=tau_mesh, gf_struct=gf_struct)
+    G_tau_data = BlockGf(mesh=tau_mesh, gf_struct=gf_struct)
+    G_tau_error = BlockGf(mesh=tau_mesh, gf_struct=gf_struct)
 
     ### read out blocks from full w2dyn matrices
     offset = 0
-    for name, g_tau in G_tau:
+    for name, _ in G_tau_data:
 
-        size1 = G_tau[name].data.shape[-1]
-        size2 = G_tau[name].data.shape[-2]
+        ### check that sizes are quadratic
+        size1 = G_tau_data[name].data.shape[-1]
+        size2 = G_tau_data[name].data.shape[-2]
         assert( size1 == size2 )
         size_block = size1
         gtau_block = gtau[offset:offset+size_block, offset:offset+size_block, :]
-        g_tau.data[:] = -gtau_block.transpose(2, 0, 1)
+
+        ### I will kill Markus when I see him next for using this shitty numpy recarray here....!!
+	gtau_data_new = np.zeros(shape = (size1, size2, n_tau), dtype = complex)
+	gtau_error_new = np.zeros(shape = (size1, size2, n_tau), dtype = complex)
+	for s1 in range(0,size1):
+            for s2 in range(0,size2):
+                for t in range(0,n_tau):
+	            tmp = gtau_block[s1,s2,t]
+                    gtau_data_new[s1,s2,t] = tmp[0]
+                    gtau_error_new[s1,s2,t] = tmp[1]
+
+        G_tau_data[name].data[:] = -gtau_data_new.transpose(2, 0, 1)
+        G_tau_error[name].data[:] = -gtau_error_new.transpose(2, 0, 1)
 
         offset += size_block
 
-    return G_tau
+    return G_tau_data, G_tau_error
 
 # ----------------------------------------------------------------------    
 def triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G_iw):
