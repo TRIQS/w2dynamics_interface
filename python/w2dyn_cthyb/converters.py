@@ -189,6 +189,8 @@ def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, n_tau, beta, gf_struct):
     G_tau_data = BlockGf(mesh=tau_mesh, gf_struct=gf_struct)
     G_tau_error = BlockGf(mesh=tau_mesh, gf_struct=gf_struct)
 
+    gtau = exchange_fastest_running_index_ffw(gtau)
+
     ### read out blocks from full w2dyn matrices
     offset = 0
     for name, _ in G_tau_data:
