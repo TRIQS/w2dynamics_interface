@@ -54,11 +54,8 @@ install(FILES ${W2DYN_ROOT}/__init__.py DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT
 add_subdirectory(python/w2dyn_cthyb)
 
 # Tests
-option(Build_Tests "Build tests" ON)
-if(Build_Tests)
-  enable_testing()
-  add_subdirectory(test/python)
-endif()
+enable_testing()
+add_subdirectory(test/python)
 
 # Documentation
 option(Build_Documentation "Build documentation" OFF)
