@@ -138,13 +138,21 @@ class Solver():
         from converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
 
         ftau, _, __ = triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(self.Delta_tau)
+        ftau = ftau.transpose(1,2,3,4,0)
+        print 'ftau.shape', ftau.shape
 
-        #print "ftau.shape", ftau.shape
-        #print "ftau", ftau
+        ftau = ftau.reshape(norb*2, norb*2, self.n_tau )
+        from converters import exchange_fastest_running_index_ffw
+        ftau = exchange_fastest_running_index_ffw(ftau)
+        ftau = ftau.reshape(norb,2, norb,2, self.n_tau )
+        ftau = ftau.transpose(4,0,1,2,3)
+
+        # print "ftau.shape", ftau.shape
+        # print "ftau", ftau
 
         ### now comes w2dyn!
-        import w2dyn.dmft.impurity as impurity
-        import w2dyn.auxiliaries.config as config
+        import dmft.impurity as impurity
+        import auxiliaries.config as config
 
         # Make a temporary files with input parameters
         
@@ -155,7 +163,7 @@ class Solver():
 Nd = %i
 Hamiltonian = Kanamori
 [QMC]
-TaudiffMax = 2.0""" % norb
+TaudiffMax = -1.0""" % norb
 
         cfg_file = tempfile.NamedTemporaryFile(delete=False)
         cfg_file.write(Parameters_in)
@@ -192,7 +200,7 @@ TaudiffMax = 2.0""" % norb
         #cfg["QMC"]["statesampling"] = 1
         #for name in cfg["QMC"]:
             #print name, " = ", cfg["QMC"][name]
-        cfg["General"]["FFType"] = "plain-full"
+        # cfg["General"]["FFType"] = "plain-full"
 
         #print "cfg", cfg
         #exit(-1)
