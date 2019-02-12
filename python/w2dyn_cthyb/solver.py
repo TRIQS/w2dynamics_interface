@@ -172,6 +172,7 @@ TaudiffMax = 2.0""" % norb
 	#cfg["QMC"]["complex"] = 1
 	#cfg["QMC"]["use_phase"] = 1
 	cfg["QMC"]["Percentage4OperatorMove"] = 0.005
+	cfg["QMC"]["PercentageGlobalMove"] = 0.005
 
         os.remove(cfg_file.name) # remove temp file with input parameters
 
@@ -208,7 +209,7 @@ TaudiffMax = 2.0""" % norb
         fiw     = np.zeros(shape=(2*self.n_iw, norb, 2, norb, 2))
         fmom    = np.zeros(shape=(2, norb, 2, norb, 2))
         symmetry_moves = ()
-        paramag = True
+        paramag = False
         atom = config.atomlist_from_cfg(cfg, norb)[0]
 
         ### we begin with real not complex calculations
@@ -264,15 +265,11 @@ TaudiffMax = 2.0""" % norb
         from converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
         self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, self.n_tau, self.beta, self.gf_struct)
 
-        ### I will try to use the FFT from triqs here...
+        ### I will use the FFT from triqs here...
+        for name, g in self.G_tau:
+            bl_size = g.target_shape[0]
+            known_moments = np.zeros((4, bl_size, bl_size), dtype=np.complex)
+            for i in range(bl_size):
+                known_moments[1,i,i] = 1
 
-        try:
-            self.G_iw << Fourier(self.G_tau)
-        except:
-
-            giw = result.giw
-            giw = giw.transpose(1,2,3,4,0)
-
-            from converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
-            self.G_iw = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, self.n_iw, self.beta, self.gf_struct)
-
+            self.G_iw[name].set_from_fourier(g, known_moments)
