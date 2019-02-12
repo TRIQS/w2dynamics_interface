@@ -87,8 +87,7 @@ class Solver():
         t_OO_extr = block_diag(*t_OO_extr_list)
         t_OO_extr *= -1 # W2Dynamics sign convention
 
-        # This is a bug! We support passing quadratic terms both from G0_iw and H_int
-        t_OO = t_OO_extr # we want to use the one extracted
+        t_OO += t_OO_extr # Combine quadratic terms from h_int and G0_iw
 
         ### Andi: the definition in the U-Matrix in w2dyn is
         ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k
