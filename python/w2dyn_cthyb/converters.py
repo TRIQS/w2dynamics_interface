@@ -150,9 +150,9 @@ def triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(G_tau):
     return g_tosos, beta, ntau
 
 # ----------------------------------------------------------------------    
-def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, n_tau, beta, gf_struct):
+def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau_osost, beta, gf_struct):
 
-    """ Convert a W2Dynamics ndarray format with indices [tosos]
+    """ Convert a W2Dynamics ndarray format with indices [osost]
     where t is time, o is orbital, s is spin index
     to a spin-block Triqs imaginary time response function 
 
@@ -166,26 +166,50 @@ def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, n_tau, beta, gf_struct):
 
     Author: Hugo U. R. Strand (2019) """
 
-    ### check number of tau points is correct and as last dimension
-    n_tau_check = gtau.shape[-1]
-    assert n_tau_check == n_tau
+    gtau = gtau_osost['value']
+    gtau_err = gtau_osost['error']
 
-    ### check if gtau is 3 or 5 dimensional, and make it 3 dimensional
-    if len(gtau.shape) == 5:
-        norbs = gtau.shape[0]
-        nspin = gtau.shape[1]
-        nflavour = norbs * nspin
-        gtau = gtau.reshape(nflavour, nflavour, n_tau)
-    elif len(gtau.shape) == 3:
-        nflavour = gtau.shape[0]
-    else: 
-       raise Exception("gtau array must be 3 or 5 dimensional with tau as last dimension!")
+    n_tau = gtau.shape[-1]
+    assert n_tau % 2 == 0, "Need an even number of tau points to downsample to Triqs tau mesh"
+
+    # -- Average over interior bins to simulate Triqs bin structure
+    # -- with half-width edge bins.
+
+    def average_interior_bins(gtau):
+        
+        gtau_0 = gtau[..., 0]
+        gtau_beta = gtau[..., -1]
+        gtau_mid = gtau[..., 1:-1]
+        gtau_mid = 0.5 * (gtau_mid[..., ::2] + gtau_mid[..., 1::2])
+
+        shape = list(gtau_mid.shape)
+        shape[-1] += 2
+
+        gtau = np.zeros(shape)
+        gtau[..., 0] = gtau_0
+        gtau[..., -1] = gtau_beta
+        gtau[..., 1:-1] = gtau_mid
+
+        return gtau
+
+    gtau = average_interior_bins(gtau)
+    gtau_err = average_interior_bins(gtau_err)
+
+    ### Reshape to rank 3
+    
+    assert( len(gtau.shape) == 5 )
+
+    norbs, nspin, _, _, n_tau = gtau.shape
+    shape = (norbs * nspin, norbs * nspin, n_tau)
+    gtau, gtau_err = gtau.reshape(shape), gtau_err.reshape(shape)
 
     ### generate triqs Green function with same dimension than
     ### the input; this may not be a good idea if worm is used
     ### since then the output can have another structure...
     from pytriqs.gf import MeshImTime, BlockGf
+
     tau_mesh = MeshImTime(beta, 'Fermion', n_tau)
+
     G_tau_data = BlockGf(mesh=tau_mesh, gf_struct=gf_struct)
     G_tau_error = BlockGf(mesh=tau_mesh, gf_struct=gf_struct)
 
@@ -195,26 +219,16 @@ def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau, n_tau, beta, gf_struct):
     offset = 0
     for name, _ in G_tau_data:
 
-        ### check that sizes are quadratic
-        size1 = G_tau_data[name].data.shape[-1]
-        size2 = G_tau_data[name].data.shape[-2]
-        assert( size1 == size2 )
+        size1, size2 = G_tau_data[name].target_shape        
+        assert( size1 == size2 )        
         size_block = size1
+
         gtau_block = gtau[offset:offset+size_block, offset:offset+size_block, :]
+        gtau_err_block = gtau_err[offset:offset+size_block, offset:offset+size_block, :]
 
-        ### I will kill Markus when I see him next for using this shitty numpy recarray here....!!
-	gtau_data_new = np.zeros(shape = (size1, size2, n_tau), dtype = complex)
-	gtau_error_new = np.zeros(shape = (size1, size2, n_tau), dtype = complex)
-	for s1 in range(0,size1):
-            for s2 in range(0,size2):
-                for t in range(0,n_tau):
-	            tmp = gtau_block[s1,s2,t]
-                    gtau_data_new[s1,s2,t] = tmp[0]
-                    gtau_error_new[s1,s2,t] = tmp[1]
-
-        G_tau_data[name].data[:] = -gtau_data_new.transpose(2, 0, 1)
-        G_tau_error[name].data[:] = -gtau_error_new.transpose(2, 0, 1)
-
+        G_tau_data[name].data[:] = -gtau_block.transpose(2, 0, 1)
+        G_tau_error[name].data[:] = -gtau_err_block.transpose(2, 0, 1)
+        
         offset += size_block
 
     return G_tau_data, G_tau_error
