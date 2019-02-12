@@ -151,8 +151,8 @@ class Solver():
         # print "ftau", ftau
 
         ### now comes w2dyn!
-        import dmft.impurity as impurity
-        import auxiliaries.config as config
+        import w2dyn.dmft.impurity as impurity
+        import w2dyn.auxiliaries.config as config
 
         # Make a temporary files with input parameters
         
