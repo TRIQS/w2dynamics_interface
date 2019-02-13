@@ -30,7 +30,7 @@ from extractor import extract_deltaiw_and_tij_from_G0
 
 class Solver():
     
-    def __init__(self, beta, gf_struct, n_iw=1025, n_tau=10001, n_l=30):
+    def __init__(self, beta, gf_struct, n_iw=1025, n_tau=10001, n_l=30, delta_interface=False):
         """Constructor setting up response function parameters
 
         Arguments:
@@ -40,19 +40,24 @@ class Solver():
         n_tau : number of imaginary time points
         """
 
+	self.constr_params = { "beta": beta, "gf_struct": gf_struct, "n_iw": n_iw,
+			       "n_tau": n_tau, "n_l": n_l, "delta_interface": delta_interface }
+
         self.beta = beta
         self.gf_struct= gf_struct
         self.n_iw = n_iw
         self.n_tau = n_tau
         self.n_l = n_l
+        self.delta_interface = delta_interface
 
         self.tau_mesh = MeshImTime(beta, 'Fermion', n_tau)
         self.iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
-        
-        self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
 
-        self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
-        self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
+	if self.delta_interface:
+            self.t_ij = [ np.array((len(idx_lst), len(idx_lst)), dtype=np.complex), for bl, idx_lst in self.gf_struct ]
+            self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
+	else:
+            self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
 
     def solve(self, **params_kw):
         """Solve impurity model 
@@ -64,10 +69,13 @@ class Solver():
         h_int : interaction Hamiltonian
         """
 
-        self.n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
-        self.n_warmup_cycles = params_kw.pop("n_warmup_cycles", 100000) ### default
-        self.length_cycle = params_kw.pop("length_cycle", 50)
-        self.h_int = params_kw.pop("h_int")
+        n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
+        n_warmup_cycles = params_kw.pop("n_warmup_cycles", 100000) ### default
+        length_cycle = params_kw.pop("length_cycle", 50)
+        h_int = params_kw.pop("h_int")
+
+        self.last_solve_params = { "n_cycles": n_cycles, "n_warmup_cycles": n_warmup_cycles,
+			"length_cycle": length_cycle, "h_int": h_int }
         
         if isinstance(self.gf_struct,dict):
             print "WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict"
@@ -75,31 +83,32 @@ class Solver():
 
         fundamental_operators = fundamental_operators_from_gf_struct(self.gf_struct)
 
-        t_OO = quadratic_matrix_from_operator(self.h_int, fundamental_operators)
-        t_OO *= -1 # W2Dynamics sign convention
-
-        Delta_iw, t_OO_extr_list = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
-        Delta_iw = conjugate(Delta_iw) # in w2dyn Delta is a hole propagator
-        self.Delta_tau << Fourier(Delta_iw)
-
-        assert len(t_OO_extr_list) in set([1, 2, 4]), \
-            "For now t_OO must not contain more than 4 blocks; generalize it!"
-        t_OO_extr = block_diag(*t_OO_extr_list)
-        t_OO_extr *= -1 # W2Dynamics sign convention
-
-        t_OO += t_OO_extr # Combine quadratic terms from h_int and G0_iw
-
         ### Andi: the definition in the U-Matrix in w2dyn is
         ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k
         ###                                         !   !
         ### a factor of 2 is needed to compensate the 1/2, and a minus for 
         ### exchange of the annihilators; is this correct for any two particle interaction term?
-        U_OOOO = -2.0 * quartic_tensor_from_operator(
-            self.h_int, fundamental_operators, perm_sym=True)
+        U_ijkl = -2.0 * quartic_tensor_from_operator(
+            h_int, fundamental_operators, perm_sym=True)
+
+	if not self.delta_interface:
+
+	    ### TODO: check that H_int only contains quartic terms
+
+            Delta_iw, self.t_ij= extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
+            Delta_iw = conjugate(Delta_iw) # in w2dyn Delta is a hole propagator
+
+            self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
+            self.Delta_tau << Fourier(Delta_iw)
+
+        assert len(self.t_ij) in set([1, 2, 4]), \
+            "For now self.t_ij must not contain more than 4 blocks; generalize it!"
+        self.t_ij_matrix = block_diag(*self.t_ij)
+        self.t_ij_matrix *= -1 # W2Dynamics sign convention
 
         ### transform t_ij from (f,f) to (o,s,o,s) format
-        t_osos = NO_to_Nos(t_OO, spin_first=True)
-        norb = t_osos.shape[0]
+        t_osos_tensor = NO_to_Nos(self.t_ij_matrix, spin_first=True)
+        norb = t_osos_tensor.shape[0]
 
         ### TODO: triqs solver takes G0 and converts it into F(iw) and F(tau)
         ### but we directly need F(tau)
@@ -158,9 +167,9 @@ TaudiffMax = -1.0""" % norb
         cfg["QMC"]["NLegMax"] = self.n_l
         cfg["QMC"]["NLegOrder"] = self.n_l
 
-        cfg["QMC"]["Nwarmups"] = self.length_cycle * self.n_warmup_cycles
-        cfg["QMC"]["Nmeas"] = self.n_cycles
-        cfg["QMC"]["Ncorr"] = self.length_cycle
+        cfg["QMC"]["Nwarmups"] = length_cycle * n_warmup_cycles
+        cfg["QMC"]["Nmeas"] = n_cycles
+        cfg["QMC"]["Ncorr"] = length_cycle
 
         #cfg["QMC"]["statesampling"] = 1
         #for name in cfg["QMC"]:
@@ -189,8 +198,13 @@ TaudiffMax = -1.0""" % norb
         fiw = np.real(fiw)
         fmom = np.real(fmom)
         ftau = np.real(ftau)
-        muimp = np.real(t_osos)
-        U_OOOO = np.real(U_OOOO)
+        muimp = np.real(t_osos_tensor)
+        U_ijkl = np.real(U_ijkl)
+ 
+        ### this is for complex
+        #muimp = t_osos
+
+        print "ftau.shape", ftau.shape
 
         ### here the properties of the impurity will be defined
 	    ### impurity problem for real code:
@@ -219,22 +233,24 @@ TaudiffMax = -1.0""" % norb
 
         ### overwrite dummy umatrix in solver class
         #print "solver.umatrix.shape", solver.umatrix.shape
-        #print "U_OOOO.shape", U_OOOO.shape
-        solver.umatrix = U_OOOO
+        #print "U_ijkl.shape", U_ijkl.shape
+        solver.umatrix = U_ijkl
 
         ### solve impurity problem 
         mccfgcontainer = []
         iter_no = 1
-	    ### for real
+        ### for real
         result = solver.solve(iter_no, mccfgcontainer)
-	    ### for complex
+        ### for complex
         #result = solver.solve(mccfgcontainer)
-
+ 
         gtau = result.other["gtau-full"]
 
         ### here comes the function for conversion w2dyn --> triqs
         self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
             gtau, self.beta, self.gf_struct)
+
+        self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
 
         ### I will use the FFT from triqs here...
         for name, g in self.G_tau:
