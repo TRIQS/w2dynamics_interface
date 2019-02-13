@@ -54,7 +54,6 @@ class Solver():
         self.iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
 
 	if self.delta_interface:
-            self.t_ij = [ np.array((len(idx_lst), len(idx_lst)), dtype=np.complex), for bl, idx_lst in self.gf_struct ]
             self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
 	else:
             self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
@@ -66,17 +65,22 @@ class Solver():
         n_cycles : number of Monte Carlo cycles
         n_warmup_cycles : number of warmub Monte Carlo cycles
         length_cycle : number of proposed moves per cycle
-        h_int : interaction Hamiltonian
+        h_int : interaction Hamiltonian as a quartic triqs operator
+        h_0 : quadratic part of the local Hamiltonian
+              (only required if delta_interface=true has been specified during construction)
         """
 
         n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
         n_warmup_cycles = params_kw.pop("n_warmup_cycles", 100000) ### default
         length_cycle = params_kw.pop("length_cycle", 50)
         h_int = params_kw.pop("h_int")
-
         self.last_solve_params = { "n_cycles": n_cycles, "n_warmup_cycles": n_warmup_cycles,
 			"length_cycle": length_cycle, "h_int": h_int }
         
+        if self.delta_interface:
+            h_0 = params_kw.pop("h_0")
+            self.last_solve_params["h_0"] = h_0
+
         if isinstance(self.gf_struct,dict):
             print "WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict"
             self.gf_struct = [ [k, v] for k, v in self.gf_struct.iteritems() ]
@@ -91,23 +95,25 @@ class Solver():
         U_ijkl = -2.0 * quartic_tensor_from_operator(
             h_int, fundamental_operators, perm_sym=True)
 
-	if not self.delta_interface:
-
-	    ### TODO: check that H_int only contains quartic terms
-
-            Delta_iw, self.t_ij= extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
+	if self.delta_interface:
+            ### TODO: check that h_0 only contains quadratic terms and is gf_struct compatible
+            t_ij_matrix = quadratic_matrix_from_operator(h_0, fundamental_operators)
+        else:
+	    ### TODO: check that H_int only contains quartic terms and is gf_struct compatible
+            Delta_iw, t_ij_lst = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
             Delta_iw = conjugate(Delta_iw) # in w2dyn Delta is a hole propagator
 
             self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
             self.Delta_tau << Fourier(Delta_iw)
 
-        assert len(self.t_ij) in set([1, 2, 4]), \
-            "For now self.t_ij must not contain more than 4 blocks; generalize it!"
-        self.t_ij_matrix = block_diag(*self.t_ij)
-        self.t_ij_matrix *= -1 # W2Dynamics sign convention
+            assert len(t_ij_lst) in set([1, 2, 4]), \
+                  "For now t_ij_lst must not contain more than 4 blocks; generalize it!"
+            t_ij_matrix = block_diag(*t_ij_lst)
+
+        t_ij_matrix *= -1 # W2Dynamics sign convention
 
         ### transform t_ij from (f,f) to (o,s,o,s) format
-        t_osos_tensor = NO_to_Nos(self.t_ij_matrix, spin_first=True)
+        t_osos_tensor = NO_to_Nos(t_ij_matrix, spin_first=True)
         norb = t_osos_tensor.shape[0]
 
         ### TODO: triqs solver takes G0 and converts it into F(iw) and F(tau)
@@ -250,7 +256,7 @@ TaudiffMax = -1.0""" % norb
         self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
             gtau, self.beta, self.gf_struct)
 
-        self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
+        self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
 
         ### I will use the FFT from triqs here...
         for name, g in self.G_tau:
