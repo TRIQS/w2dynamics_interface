@@ -11,5 +11,5 @@ endforeach()
 # Set the PythonPath for all tests
 set_property(TEST ${all_tests} PROPERTY ENVIRONMENT
   PATH=${CMAKE_BINARY_DIR}/w2dynamics/cpp:$ENV{PATH}
-  PYTHONPATH=${CMAKE_SOURCE_DIR}/python:$ENV{PYTHONPATH}
+  PYTHONPATH=${CMAKE_SOURCE_DIR}/python:${CMAKE_BINARY_DIR}/w2dyn_project/src:$ENV{PYTHONPATH}
 )
