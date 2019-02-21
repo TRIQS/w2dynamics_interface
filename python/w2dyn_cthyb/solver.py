@@ -1,7 +1,7 @@
 """ 
 W2Dynamics wrapper for the Triqs library
 
-Authors: Andreas Hausoel, Hugo U. R. Strand (2019)
+Authors: Andreas Hausoel, Hugo U. R. Strand, Nils Wentzell (2019)
 
 """
 import os, sys
