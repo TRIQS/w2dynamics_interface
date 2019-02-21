@@ -68,7 +68,7 @@ S.G0_iw << G0_iw
 solve_params = {
         'h_int' : h_int,
         'n_warmup_cycles' : 100,
-        'n_cycles' : 15000,
+        'n_cycles' : 5000,
         'length_cycle' : 100,
         }
 S.solve(**solve_params)
