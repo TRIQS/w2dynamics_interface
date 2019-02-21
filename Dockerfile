@@ -1,7 +1,7 @@
 # See ../triqs/packaging for other options
 FROM flatironinstitute/triqs:master-ubuntu-clang
 
-RUN apt-get install -y libgsl-dev || yum install -y gsl-devel
+RUN apt-get install -y libnfft3-dev || yum install -y nfft-devel
 
 ARG APPNAME
 COPY . $SRC/$APPNAME
