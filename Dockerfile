@@ -2,6 +2,7 @@
 FROM flatironinstitute/triqs:master-ubuntu-clang
 
 RUN apt-get install -y libnfft3-dev || yum install -y nfft-devel
+RUN apt-get install -y python-configobj || yum install -y python-configobj
 
 ARG APPNAME
 COPY . $SRC/$APPNAME
