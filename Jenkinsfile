@@ -70,7 +70,7 @@ for (int i = 0; i < osxPlatforms.size(); i++) {
         "PATH=$triqsDir/bin:${env.BREW}/bin:/usr/bin:/bin:/usr/sbin",
         "CPLUS_INCLUDE_PATH=$triqsDir/include:${env.BREW}/include",
         "LIBRARY_PATH=$triqsDir/lib:${env.BREW}/lib",
-        "CMAKE_PREFIX_PATH=$triqsDir/share/cmake"]) {
+        "CMAKE_PREFIX_PATH=$triqsDir/lib/cmake/triqs"]) {
         deleteDir()
         sh "cmake $srcDir -DCMAKE_INSTALL_PREFIX=$installDir -DTRIQS_ROOT=$triqsDir -DLAPACK_ROOT=${env.BREW}/opt/lapack"
         sh "make -j3"
@@ -143,7 +143,7 @@ Changes:
 End of build log:
 \${BUILD_LOG,maxLines=60}
     """,
-    to: 'nwentzell@flatironinstitute.org, dsimon@flatironinstitute.org',
+    to: 'nwentzell@flatironinstitute.org, hstrand@flatironinstitute.org, dsimon@flatironinstitute.org',
     recipientProviders: [
       [$class: 'DevelopersRecipientProvider'],
     ],
