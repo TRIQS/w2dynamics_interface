@@ -62,7 +62,7 @@ def get_test_impurity_model(norb=2, ntau=1000, beta=10.0):
     return gf_struct, Delta_tau, H_loc
 
 # ----------------------------------------------------------------------    
-def NO_to_Nos(A_NO, spin_first=True):
+def NO_to_Nos(A_NO, spin_first=False):
 
     """ Reshape a rank N tensor with composite spin and orbital
     index to a rank 2N tensor with orbital and then spin index.
@@ -123,24 +123,15 @@ def triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(G_tau):
     tau = np.array([ float(t) for t in G_tau.mesh ])
     ntau = len(tau)
     np.testing.assert_almost_equal(tau[-1], beta)
-    
-    g_stoo = np.array([ g_tau.data for block_name, g_tau in G_tau ])
-    nblocks, nt, size1, size2 = g_stoo.shape
 
-    assert( size1 == size2 )
+    ### this will be the full object
+    g_tff = np.zeros(shape=(ntau,full_size,full_size),dtype=g.data.dtype)
 
-    ### the general back-conversion of the numpy arrays to triqs objects will
-    ### anyway be ugly, therefore it does not matter for this 
-    ### conversion either....
-
-    g_tff = np.zeros(shape=(ntau,full_size,full_size),dtype=g_tau.data.dtype)
-
-    ### make one big blockdiagonal matrix 
+    ### writing the blocks in full object
     offset = 0
-    for nb in range(nblocks):
-
-        size_block = g_stoo[nb,:,:,:].shape[-1]
-        g_tff[:,offset:offset+size_block,offset:offset+size_block] = g_stoo[nb,:,:,:]
+    for name, g in G_tau:
+        size_block = g.data.shape[-1]
+        g_tff[:,offset:offset+size_block,offset:offset+size_block] = g.data
 
         offset += size_block
 
