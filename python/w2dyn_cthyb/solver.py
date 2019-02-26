@@ -40,8 +40,8 @@ class Solver():
         n_tau : number of imaginary time points
         """
 
-	self.constr_params = { "beta": beta, "gf_struct": gf_struct, "n_iw": n_iw,
-			       "n_tau": n_tau, "n_l": n_l, "delta_interface": delta_interface }
+        self.constr_params = { "beta": beta, "gf_struct": gf_struct, "n_iw": n_iw,
+                "n_tau": n_tau, "n_l": n_l, "delta_interface": delta_interface }
 
         self.beta = beta
         self.gf_struct= gf_struct
@@ -53,9 +53,9 @@ class Solver():
         self.tau_mesh = MeshImTime(beta, 'Fermion', n_tau)
         self.iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
 
-	if self.delta_interface:
+        if self.delta_interface:
             self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
-	else:
+        else:
             self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
 
     def solve(self, **params_kw):
@@ -75,7 +75,7 @@ class Solver():
         length_cycle = params_kw.pop("length_cycle", 50)
         h_int = params_kw.pop("h_int")
         self.last_solve_params = { "n_cycles": n_cycles, "n_warmup_cycles": n_warmup_cycles,
-			"length_cycle": length_cycle, "h_int": h_int }
+            "length_cycle": length_cycle, "h_int": h_int }
         
         if self.delta_interface:
             h_0 = params_kw.pop("h_0")
@@ -93,13 +93,16 @@ class Solver():
         ### a factor of 2 is needed to compensate the 1/2, and a minus for 
         ### exchange of the annihilators; is this correct for any two particle interaction term?
         U_ijkl = -2.0 * quartic_tensor_from_operator(
-            h_int, fundamental_operators, perm_sym=True)
+                h_int, fundamental_operators, perm_sym=False)
+        U_ijkl = U_ijkl.reshape(norb, 2, norb, 2, norb, 2, norb, 2)
+        U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
+        U_ijkl = U_ijkl.reshape(norb*2, norb*2, norb*2, norb*2)
 
-	if self.delta_interface:
+        if self.delta_interface:
             ### TODO: check that h_0 only contains quadratic terms and is gf_struct compatible
             t_ij_matrix = quadratic_matrix_from_operator(h_0, fundamental_operators)
         else:
-	    ### TODO: check that H_int only contains quartic terms and is gf_struct compatible
+        ### TODO: check that H_int only contains quartic terms and is gf_struct compatible
             Delta_iw, t_ij_lst = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
             Delta_iw = conjugate(Delta_iw) # in w2dyn Delta is a hole propagator
 
@@ -120,16 +123,9 @@ class Solver():
         ### but we directly need F(tau)
 
         ftau, _, __ = triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(self.Delta_tau)
-        ftau = ftau.transpose(1,2,3,4,0)
         print 'ftau.shape', ftau.shape
 
-        ftau = ftau.reshape(norb*2, norb*2, self.n_tau )
-        from converters import exchange_fastest_running_index_ffw
-        ftau = exchange_fastest_running_index_ffw(ftau)
-        ftau = ftau.reshape(norb,2, norb,2, self.n_tau )
-        ftau = ftau.transpose(4,0,1,2,3)
-
-        # print "ftau.shape", ftau.shape
+        ftau = ftau.transpose(0,2,1,4,3)
         # print "ftau", ftau
 
         ### now comes w2dyn!
@@ -154,12 +150,12 @@ TaudiffMax = -1.0""" % norb
         key_value_args={}
         cfg =  config.get_cfg(cfg_file.name, key_value_args, err=sys.stderr)
         cfg["QMC"]["offdiag"] = 1
-	
-	### in case of the complex
-	#cfg["QMC"]["complex"] = 1
-	#cfg["QMC"]["use_phase"] = 1
-	cfg["QMC"]["Percentage4OperatorMove"] = 0.005
-	cfg["QMC"]["PercentageGlobalMove"] = 0.05
+
+        ### in case of the complex
+        #cfg["QMC"]["complex"] = 1
+        #cfg["QMC"]["use_phase"] = 1
+        cfg["QMC"]["Percentage4OperatorMove"] = 0.005
+        cfg["QMC"]["PercentageGlobalMove"] = 0.005
 
         os.remove(cfg_file.name) # remove temp file with input parameters
 
@@ -213,12 +209,12 @@ TaudiffMax = -1.0""" % norb
         print "ftau.shape", ftau.shape
 
         ### here the properties of the impurity will be defined
-	    ### impurity problem for real code:
+        ### impurity problem for real code:
         imp_problem = impurity.ImpurityProblem(
             self.beta, g0inviw, fiw, fmom, ftau,
             muimp, atom.dd_int, None, None, symmetry_moves,
             paramag)
-	    #### impurity problem for complex code:
+        #### impurity problem for complex code:
         #imp_problem = impurity.ImpurityProblem(
             #self.beta, g0inviw, fiw, fmom, ftau,
             #muimp, muimp, atom.dd_int, None, None, symmetry_moves,
@@ -231,8 +227,8 @@ TaudiffMax = -1.0""" % norb
         ### ( QN "All" does this)
         imp_problem.interaction.quantum_numbers = ( "Nt", "All" )
         #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt", "Qzt" ) 
-	    #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt" )
-	    #imp_problem.interaction.quantum_numbers = ( "Nt" )
+        #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt" )
+        #imp_problem.interaction.quantum_numbers = ( "Nt" )
 
         ### feed impurity problem into solver
         solver.set_problem(imp_problem)
