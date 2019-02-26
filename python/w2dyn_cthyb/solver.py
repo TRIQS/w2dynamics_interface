@@ -94,6 +94,9 @@ class Solver():
         ### exchange of the annihilators; is this correct for any two particle interaction term?
         U_ijkl = -2.0 * quartic_tensor_from_operator(
                 h_int, fundamental_operators, perm_sym=False)
+        
+        ### also in the U-matrix spin is the fastest running variable
+        norb = U_ijkl.shape[0]/2
         U_ijkl = U_ijkl.reshape(norb, 2, norb, 2, norb, 2, norb, 2)
         U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
         U_ijkl = U_ijkl.reshape(norb*2, norb*2, norb*2, norb*2)
