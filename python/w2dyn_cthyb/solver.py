@@ -128,7 +128,6 @@ class Solver():
         ftau, _, __ = triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(self.Delta_tau)
         print 'ftau.shape', ftau.shape
 
-        ftau = ftau.transpose(0,2,1,4,3)
         # print "ftau", ftau
 
         ### now comes w2dyn!

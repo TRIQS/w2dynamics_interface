@@ -135,8 +135,9 @@ def triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(G_tau):
 
         offset += size_block
 
-    ### shape into spin structure
-    g_tosos = g_tff.reshape(ntau,full_size/2,2,full_size/2,2)
+    ### spin is slow running index, but in w2dyn it is fastest running index
+    g_tosos = g_tff.reshape(ntau,2,full_size/2,2,full_size/2)
+    g_tosos = g_tosos.transpose(0,2,1,4,3)
 
     return g_tosos, beta, ntau
 
