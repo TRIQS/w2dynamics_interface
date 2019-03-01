@@ -30,7 +30,7 @@ from extractor import extract_deltaiw_and_tij_from_G0
 
 class Solver():
     
-    def __init__(self, beta, gf_struct, n_iw=1025, n_tau=10001, n_l=30, delta_interface=False):
+    def __init__(self, beta, gf_struct, n_iw=1025, n_tau=10001, n_l=30, delta_interface=False, complex=False):
         """Constructor setting up response function parameters
 
         Arguments:
@@ -49,6 +49,7 @@ class Solver():
         self.n_tau = n_tau
         self.n_l = n_l
         self.delta_interface = delta_interface
+        self.complex = complex
 
         self.tau_mesh = MeshImTime(beta, 'Fermion', n_tau)
         self.iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
@@ -151,11 +152,33 @@ TaudiffMax = -1.0""" % norb
 
         key_value_args={}
         cfg =  config.get_cfg(cfg_file.name, key_value_args, err=sys.stderr)
-        cfg["QMC"]["offdiag"] = 1
 
-        ### in case of the complex
-        #cfg["QMC"]["complex"] = 1
-        #cfg["QMC"]["use_phase"] = 1
+        ### check if Delta_tau is diagonal matrix, and set w2dyn parameter
+        ### offdiag accordingly
+        max_blocksize = 0
+        for name, d in self.Delta_tau:
+
+            blocksize = d.data.shape[-1]
+            print "blocksize", blocksize
+            if blocksize > max_blocksize:
+                max_blocksize = blocksize
+
+        if max_blocksize == 1:
+            cfg["QMC"]["offdiag"] = 0
+        else:
+            cfg["QMC"]["offdiag"] = 1
+
+        print 'cfg["QMC"]["offdiag"] ',  cfg["QMC"]["offdiag"]
+
+        if self.complex:
+            cfg["QMC"]["complex"] = 1
+            cfg["QMC"]["use_phase"] = 1
+
+            ### check if offdiag is set; complex makes no sense without offdiag
+            assert cfg["QMC"]["offdiag"] != 0, \
+                  "Complex does not make sense for diagonal Delta_tau!"
+
+
         cfg["QMC"]["Percentage4OperatorMove"] = 0.005
         cfg["QMC"]["PercentageGlobalMove"] = 0.005
 
@@ -197,36 +220,32 @@ TaudiffMax = -1.0""" % norb
         paramag = False
         atom = config.atomlist_from_cfg(cfg, norb)[0]
 
-        ### we begin with real not complex calculations
-        g0inviw = np.real(g0inviw)
-        fiw = np.real(fiw)
-        fmom = np.real(fmom)
-        ftau = np.real(ftau)
-        muimp = np.real(t_osos_tensor)
-        U_ijkl = np.real(U_ijkl)
+        ### if calculation not complex, the solver must have only
+        ### real arrays as input
+        if self.complex:
+            muimp = t_osos_tensor
+        else:
+            g0inviw = np.real(g0inviw)
+            fiw = np.real(fiw)
+            fmom = np.real(fmom)
+            ftau = np.real(ftau)
+            muimp = np.real(t_osos_tensor)
+            U_ijkl = np.real(U_ijkl)
  
-        ### this is for complex
-        #muimp = t_osos
-
         print "ftau.shape", ftau.shape
 
         ### here the properties of the impurity will be defined
-        ### impurity problem for real code:
         imp_problem = impurity.ImpurityProblem(
             self.beta, g0inviw, fiw, fmom, ftau,
             muimp, atom.dd_int, None, None, symmetry_moves,
             paramag)
-        #### impurity problem for complex code:
-        #imp_problem = impurity.ImpurityProblem(
-            #self.beta, g0inviw, fiw, fmom, ftau,
-            #muimp, muimp, atom.dd_int, None, None, symmetry_moves,
-            #paramag)
 
         print "\n" + "."*40
 
         ### hardcode the set of conserved quantities to number of electrons
         ### and activate the automatic minimalisation procedure of blocks 
         ### ( QN "All" does this)
+        print "imp_problem.interaction.quantum_numbers ",  imp_problem.interaction.quantum_numbers
         imp_problem.interaction.quantum_numbers = ( "Nt", "All" )
         #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt", "Qzt" ) 
         #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt" )
@@ -243,10 +262,10 @@ TaudiffMax = -1.0""" % norb
         ### solve impurity problem 
         mccfgcontainer = []
         iter_no = 1
-        ### for real
-        result = solver.solve(iter_no, mccfgcontainer)
-        ### for complex
-        #result = solver.solve(mccfgcontainer)
+        if self.complex:
+            result = solver.solve(mccfgcontainer)
+        else:
+            result = solver.solve(iter_no, mccfgcontainer)
  
         gtau = result.other["gtau-full"]
 

@@ -177,7 +177,7 @@ def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau_osost, beta, gf_struct):
         shape = list(gtau_mid.shape)
         shape[-1] += 2
 
-        gtau = np.zeros(shape)
+        gtau = np.zeros(shape, dtype = complex)
         gtau[..., 0] = gtau_0
         gtau[..., -1] = gtau_beta
         gtau[..., 1:-1] = gtau_mid
