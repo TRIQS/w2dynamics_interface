@@ -90,19 +90,16 @@ class Solver():
         ### exchange of the annihilators; is this correct for any two particle interaction term?
         U_ijkl = dict_to_matrix(extract_U_dict4(h_int), self.gf_struct)
 
-        ### also in the U-matrix spin is the fastest running variable
+        ### Make sure that the spin index is the fastest running variable
         norb = U_ijkl.shape[0]/2
         U_ijkl = U_ijkl.reshape(norb, 2, norb, 2, norb, 2, norb, 2)
         U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
         U_ijkl = U_ijkl.reshape(norb*2, norb*2, norb*2, norb*2)
 
         if self.delta_interface:
-            ### TODO: check that h_0 only contains quadratic terms and is gf_struct compatible
             t_ij_matrix = dict_to_matrix(extract_h_dict(h_0), self.gf_struct)
         else:
-        ### TODO: check that H_int only contains quartic terms and is gf_struct compatible
             Delta_iw, t_ij_lst = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
-            Delta_iw = conjugate(Delta_iw) # in w2dyn Delta is a hole propagator
 
             self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
             self.Delta_tau << Fourier(Delta_iw)
@@ -111,19 +108,18 @@ class Solver():
                   "For now t_ij_lst must not contain more than 4 blocks; generalize it!"
             t_ij_matrix = block_diag(*t_ij_lst)
 
+        # in w2dyn Delta is a hole propagator
+        for bl, Delta_bl in self.Delta_tau:
+            Delta_bl.data[:] = -Delta_bl.data[::-1,...]
+
         t_ij_matrix *= -1 # W2Dynamics sign convention
 
         ### transform t_ij from (f,f) to (o,s,o,s) format
         t_osos_tensor = NO_to_Nos(t_ij_matrix, spin_first=True)
         norb = t_osos_tensor.shape[0]
 
-        ### TODO: triqs solver takes G0 and converts it into F(iw) and F(tau)
-        ### but we directly need F(tau)
-
         ftau, _, __ = triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(self.Delta_tau)
         print 'ftau.shape', ftau.shape
-
-        # print "ftau", ftau
 
         ### now comes w2dyn!
         # Make a temporary files with input parameters
