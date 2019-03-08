@@ -6,7 +6,7 @@ from numpy import matrix, array, diag
 
 from pytriqs.archive import HDFArchive
 from pytriqs.utility import mpi
-from pytriqs.gf import Gf, MeshImFreq, iOmega_n, inverse, BlockGf
+from pytriqs.gf import Gf, MeshImFreq, iOmega_n, inverse, BlockGf, Fourier
 from pytriqs.operators import c, c_dag, n
 from pytriqs.operators.util.hamiltonians import h_int_kanamori
 
@@ -52,7 +52,7 @@ G0_iw = BlockGf(mesh=iw_mesh, gf_struct=gf_struct)
 G0_iw['up'] << inverse(iOmega_n + mu + h - Delta['up'])
 G0_iw['dn'] << inverse(iOmega_n + mu - h - Delta['dn'])
 
-# --------- Construct the CTHYB solver ----------
+# ==== Construct the CTHYB solver using the G0_iw Interface ====
 constr_params = {
         'beta' : beta,
         'gf_struct' : gf_struct,
@@ -69,7 +69,7 @@ solve_params = {
         'h_int' : h_int,
         'n_warmup_cycles' : 100,
         'n_cycles' : 5000,
-        'length_cycle' : 100,
+        'length_cycle' : 100
         }
 S.solve(**solve_params)
 
@@ -81,3 +81,35 @@ if mpi.is_master_node():
 
 from pytriqs.utility.h5diff import h5diff
 h5diff("SIAM_Discrete_Bath.ref.h5","SIAM_Discrete_Bath.out.h5")
+
+# ==== Construct the CTHYB solver using the Delta_tau + h_0 Interface ====
+constr_params = {
+        'beta' : beta,
+        'gf_struct' : gf_struct,
+        'n_iw' : n_iw,
+        'n_tau' : 1000,
+        'delta_interface' : True
+        }
+S = Solver(**constr_params)
+
+# --------- Initialize G0_iw ----------
+S.Delta_tau << Fourier(Delta)
+
+# --------- Solve! ----------
+solve_params = {
+        'h_int' : h_int,
+        'n_warmup_cycles' : 100,
+        'n_cycles' : 5000,
+        'length_cycle' : 100,
+        'h_0' : h_0
+        }
+S.solve(**solve_params)
+
+# -------- Save in archive ---------
+if mpi.is_master_node():
+    with HDFArchive("SIAM_Discrete_Bath.delta_interface.out.h5",'w') as results:
+        results["G_iw"] = S.G_iw
+        results["G_tau"] = S.G_tau
+
+from pytriqs.utility.h5diff import h5diff
+h5diff("SIAM_Discrete_Bath.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5")
