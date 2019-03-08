@@ -33,7 +33,7 @@ set(W2DYN_ROOT ${CMAKE_INSTALL_PREFIX})
 ExternalProject_Add(w2dyn
   PREFIX w2dyn_project
   GIT_REPOSITORY https://github.com/wentzell/w2dynamics
-  GIT_TAG cede9449eff026f0a1294f7e92355cda94825a9b
+  GIT_TAG 8882bdf009af23a9035f69af7c2754dd273283f2
   GIT_CONFIG advice.detachedHead=false
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
   	     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
