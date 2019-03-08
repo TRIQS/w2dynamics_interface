@@ -15,7 +15,7 @@ endif()
 message( STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
 # Load Dependencies
-find_package(TRIQS 2.1 REQUIRED)
+find_package(TRIQS 2.2 REQUIRED)
 
 # Default Install directory to TRIQS_ROOT if not given or invalid.
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR (NOT IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX}))
