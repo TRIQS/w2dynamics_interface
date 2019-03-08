@@ -13,14 +13,11 @@ import pytriqs.utility.mpi as mpi
 from pytriqs.gf import Fourier
 from pytriqs.gf import MeshImTime, MeshImFreq, BlockGf
 from pytriqs.gf.tools import conjugate
+from pytriqs.operators.util.extractors import *
 
 import w2dyn.auxiliaries.CTQMC
 import w2dyn.dmft.impurity as impurity
 import w2dyn.auxiliaries.config as config
-
-from pyed.OperatorUtils import fundamental_operators_from_gf_struct
-from pyed.OperatorUtils import quadratic_matrix_from_operator
-from pyed.OperatorUtils import quartic_tensor_from_operator
 
 from converters import NO_to_Nos
 from converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
@@ -86,16 +83,13 @@ class Solver():
             print "WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict"
             self.gf_struct = [ [k, v] for k, v in self.gf_struct.iteritems() ]
 
-        fundamental_operators = fundamental_operators_from_gf_struct(self.gf_struct)
-
         ### Andi: the definition in the U-Matrix in w2dyn is
         ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k
         ###                                         !   !
         ### a factor of 2 is needed to compensate the 1/2, and a minus for 
         ### exchange of the annihilators; is this correct for any two particle interaction term?
-        U_ijkl = -2.0 * quartic_tensor_from_operator(
-                h_int, fundamental_operators, perm_sym=True)
-        
+        U_ijkl = dict_to_matrix(extract_U_dict4(h_int), self.gf_struct)
+
         ### also in the U-matrix spin is the fastest running variable
         norb = U_ijkl.shape[0]/2
         U_ijkl = U_ijkl.reshape(norb, 2, norb, 2, norb, 2, norb, 2)
@@ -104,7 +98,7 @@ class Solver():
 
         if self.delta_interface:
             ### TODO: check that h_0 only contains quadratic terms and is gf_struct compatible
-            t_ij_matrix = quadratic_matrix_from_operator(h_0, fundamental_operators)
+            t_ij_matrix = dict_to_matrix(extract_h_dict(h_0), self.gf_struct)
         else:
         ### TODO: check that H_int only contains quartic terms and is gf_struct compatible
             Delta_iw, t_ij_lst = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
