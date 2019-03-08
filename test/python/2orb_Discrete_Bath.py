@@ -13,8 +13,6 @@ from itertools import product
 from numpy import matrix, array, diag, eye
 from numpy.linalg import inv
 
-from w2dyn_cthyb import Solver
-
 # ==== System Parameters ====
 beta = 30.                      # Inverse temperature
 mu = 3.0                        # Chemical potential
@@ -92,6 +90,7 @@ constr_params = {
         'n_iw' : n_iw,
         'n_tau' : 10000
         }
+from w2dyn_cthyb import Solver
 S = Solver(**constr_params)
 
 # --------- Initialize G0_iw ----------

@@ -10,8 +10,6 @@ from pytriqs.gf import Gf, MeshImFreq, iOmega_n, inverse, BlockGf, Fourier
 from pytriqs.operators import c, c_dag, n
 from pytriqs.operators.util.hamiltonians import h_int_kanamori
 
-from w2dyn_cthyb import Solver
-
 # ==== System Parameters ====
 beta = 5.           # Inverse temperature
 mu = 2.             # Chemical potential
@@ -52,6 +50,7 @@ G0_iw = BlockGf(mesh=iw_mesh, gf_struct=gf_struct)
 G0_iw['up'] << inverse(iOmega_n + mu + h - Delta['up'])
 G0_iw['dn'] << inverse(iOmega_n + mu - h - Delta['dn'])
 
+
 # ==== Construct the CTHYB solver using the G0_iw Interface ====
 constr_params = {
         'beta' : beta,
@@ -59,6 +58,7 @@ constr_params = {
         'n_iw' : n_iw,
         'n_tau' : 1000
         }
+from w2dyn_cthyb import Solver
 S = Solver(**constr_params)
 
 # --------- Initialize G0_iw ----------
