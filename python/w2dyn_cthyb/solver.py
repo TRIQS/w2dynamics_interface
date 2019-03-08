@@ -94,7 +94,7 @@ class Solver():
         ### a factor of 2 is needed to compensate the 1/2, and a minus for 
         ### exchange of the annihilators; is this correct for any two particle interaction term?
         U_ijkl = -2.0 * quartic_tensor_from_operator(
-                h_int, fundamental_operators, perm_sym=False)
+                h_int, fundamental_operators, perm_sym=True)
         
         ### also in the U-matrix spin is the fastest running variable
         norb = U_ijkl.shape[0]/2
