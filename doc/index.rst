@@ -3,7 +3,7 @@
 The w2dynamics interface
 ========================
 
-w2dynamics_interface is a python TRIQS interface to the w2dynamics QMC code (`program's main page <https://w2dynamics.github.io/>`_).
+w2dynamics_interface is a python interface of the Würzburg / Wien strong coupling impurity solver `w2dynamics <https://github.com/w2dynamics/w2dynamics>`_.
 
 The present documentation contains :ref:`installation <install>` instructions.
 
