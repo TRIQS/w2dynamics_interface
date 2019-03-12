@@ -1,19 +1,30 @@
-.. _contents:
+.. _documentation:
 
 Documentation
 =============
 
-Contents
---------
+Basic notions
+-------------
 
 .. toctree::
    :maxdepth: 1
 
-   index
-   install
-   reference/contents
-   tutorials
-   about
-   issues
-   changelog
+   w2dyn_cthyb
 
+User guide
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   guide/aim.rst
+   guide/settingparameters
+   guide/additional_remarks
+
+Reference manual
+----------------
+
+.. toctree::
+   :maxdepth: 1
+
+   reference/solver
