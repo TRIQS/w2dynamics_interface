@@ -69,7 +69,7 @@ class Solver():
         """
 
         n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
-        n_warmup_cycles = params_kw.pop("n_warmup_cycles", 100000) ### default
+        n_warmup_cycles = params_kw.pop("n_warmup_cycles", 5000) ### default
         length_cycle = params_kw.pop("length_cycle", 50)
         h_int = params_kw.pop("h_int")
         self.last_solve_params = { "n_cycles": n_cycles, "n_warmup_cycles": n_warmup_cycles,

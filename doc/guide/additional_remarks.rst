@@ -116,3 +116,20 @@ the structure should be the following::
     (J=1/2, Jz=1/2), (J=3/2, Jz=1/2), (J=3/2, Jz=3/2), (J=1/2, Jz=-1/2), (J=3/2, Jz=-1/2), (J=3/2, Jz=-3/2)
 
 This may be fixed in later versions.
+
+Remark 3 - The hybridization function
+-------------------------------------
+
+The hybridization function :math:`\Delta` between the bath and the impurity 
+has to be given in the particle picture, even though in cthyb the hole
+propagator ist needed.
+
+.. math::
+
+  \Delta_{\alpha\beta} (i \omega_n) = \sum_k \frac{V_{k,\alpha} V^*_{k,\beta}}{i \omega_n - \epsilon_{k,\alpha}},
+
+With this, the non-interacting Green's function of the impurity is:
+
+.. math::
+
+  \hat{G}^{-1}_0 (i \omega_n) = i \omega_n + \mu - \hat h - \hat{\Delta}(i \omega_n).
