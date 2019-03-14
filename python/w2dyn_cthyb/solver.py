@@ -79,6 +79,13 @@ class Solver():
             h_0 = params_kw.pop("h_0")
             self.last_solve_params["h_0"] = h_0
 
+        random_seed = params_kw.pop("random_seed", 1)
+        move_double = params_kw.pop("move_double", True)
+        measure_G_l = params_kw.pop("measure_G_l", True)
+        measure_pert_order = params_kw.pop("measure_pert_order", False)
+        statesampling = params_kw.pop("statesampling", False)
+        flavourchange_moves = params_kw.pop("flavourchange_moves", False)
+
         if isinstance(self.gf_struct,dict):
             print "WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict"
             self.gf_struct = [ [k, v] for k, v in self.gf_struct.iteritems() ]
@@ -169,8 +176,19 @@ TaudiffMax = -1.0""" % norb
                   "Complex does not make sense for diagonal Delta_tau!"
 
 
-        cfg["QMC"]["Percentage4OperatorMove"] = 0.005
+        if move_double:
+            cfg["QMC"]["Percentage4OperatorMove"] = 0.005
+        else:
+            cfg["QMC"]["Percentage4OperatorMove"] = 0
+        print 'cfg["QMC"]["Percentage4OperatorMove"] ',  cfg["QMC"]["Percentage4OperatorMove"]
+
         cfg["QMC"]["PercentageGlobalMove"] = 0.005
+
+        if flavourchange_moves:
+            cfg["QMC"]["flavourchange_moves"] = 1
+        else:
+            cfg["QMC"]["flavourchange_moves"] = 0
+        print 'cfg["QMC"]["flavourchange_moves"] ',  cfg["QMC"]["flavourchange_moves"]
 
         os.remove(cfg_file.name) # remove temp file with input parameters
 
@@ -181,22 +199,25 @@ TaudiffMax = -1.0""" % norb
         cfg["General"]["beta"] = self.beta
         cfg["QMC"]["Niw"] = self.n_iw
         cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
-        cfg["QMC"]["NLegMax"] = self.n_l
-        cfg["QMC"]["NLegOrder"] = self.n_l
+        if measure_G_l:
+            cfg["QMC"]["NLegMax"] = self.n_l
+            cfg["QMC"]["NLegOrder"] = self.n_l
+        else:
+            cfg["QMC"]["NLegMax"] = 1
+            cfg["QMC"]["NLegOrder"] = 1
 
         cfg["QMC"]["Nwarmups"] = length_cycle * n_warmup_cycles
         cfg["QMC"]["Nmeas"] = n_cycles
         cfg["QMC"]["Ncorr"] = length_cycle
 
-        #cfg["QMC"]["statesampling"] = 1
-        #for name in cfg["QMC"]:
-            #print name, " = ", cfg["QMC"][name]
-        # cfg["General"]["FFType"] = "plain-full"
-
-        #print "cfg", cfg
+        if statesampling:
+            cfg["QMC"]["statesampling"] = 1
+        else:
+            cfg["QMC"]["statesampling"] = 0
+        print 'cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"]
 
         ### initialize the solver; it needs the config-string
-        Nseed = 1 + mpi.rank
+        Nseed = random_seed + mpi.rank
         use_mpi = False
         mpi_comm = mpi.world
         solver = impurity.CtHybSolver(cfg, Nseed, 0,0,0, False, mpi_comm)
@@ -273,3 +294,15 @@ TaudiffMax = -1.0""" % norb
                 known_moments[1,i,i] = 1
 
             self.G_iw[name].set_from_fourier(g, known_moments)
+
+        ### add perturbation order as observable
+        print 'measure_pert_order ', measure_pert_order 
+        if measure_pert_order:
+            hist = result.other["hist"]
+            print 'hist.shape', hist.shape
+
+        ### GF in Legendre expansion
+        if measure_G_l:
+            Gl = result.other["gleg-full"]
+            print 'Gl.shape', Gl.shape
+
