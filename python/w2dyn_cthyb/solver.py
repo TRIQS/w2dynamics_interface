@@ -85,6 +85,7 @@ class Solver():
         measure_pert_order = params_kw.pop("measure_pert_order", False)
         statesampling = params_kw.pop("statesampling", False)
         flavourchange_moves = params_kw.pop("flavourchange_moves", False)
+        move_global_prob = params_kw.pop("flavomove_global_prob", 0.005)
 
         if isinstance(self.gf_struct,dict):
             print "WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict"
@@ -182,7 +183,7 @@ TaudiffMax = -1.0""" % norb
             cfg["QMC"]["Percentage4OperatorMove"] = 0
         print 'cfg["QMC"]["Percentage4OperatorMove"] ',  cfg["QMC"]["Percentage4OperatorMove"]
 
-        cfg["QMC"]["PercentageGlobalMove"] = 0.005
+        cfg["QMC"]["PercentageGlobalMove"] = move_global_prob
 
         if flavourchange_moves:
             cfg["QMC"]["flavourchange_moves"] = 1
