@@ -1,12 +1,12 @@
 def projectName = "w2dynamics_interface" /* set to app/repo name */
 
 /* which platform to build documentation on */
-def documentationPlatform = "disabled"
+def documentationPlatform = "ubuntu-clang"
 /* depend on triqs upstream branch/project */
 def triqsBranch = env.CHANGE_TARGET ?: env.BRANCH_NAME
 def triqsProject = '/TRIQS/triqs/' + triqsBranch.replaceAll('/', '%2F')
 /* whether to publish the results (disabled for template project) */
-def publish = !env.BRANCH_NAME.startsWith("PR-") && projectName != "app4triqs" && projectName != "w2dynamics_interface"
+def publish = !env.BRANCH_NAME.startsWith("PR-") && projectName != "app4triqs"
 
 properties([
   disableConcurrentBuilds(),
@@ -73,7 +73,7 @@ for (int i = 0; i < osxPlatforms.size(); i++) {
         "CMAKE_PREFIX_PATH=$triqsDir/lib/cmake/triqs",
 	"NPY_DISTUTILS_APPEND_FLAGS=1"]) {
         deleteDir()
-        sh "cmake $srcDir -DCMAKE_INSTALL_PREFIX=$installDir -DTRIQS_ROOT=$triqsDir -DLAPACK_ROOT=${env.BREW}/opt/lapack"
+        sh "cmake $srcDir -DCMAKE_INSTALL_PREFIX=$installDir -DTRIQS_ROOT=$triqsDir"
         sh "make -j1"
         try {
           sh "make test CTEST_OUTPUT_ON_FAILURE=1"
