@@ -1,10 +1,10 @@
-version = "@APP4TRIQS_VERSION@"
+version = "@W2DYNAMICS_INTERFACE_VERSION@"
 triqs_hash = "@TRIQS_GIT_HASH@"
 w2dyn_hash = "@W2DYN_GIT_HASH@"
-w2dynamics_interface_hash = "@W2DYNAMICS_INTERFACE_GIT_HASH@"
+w2dyn_cthyb_hash = "@W2DYNAMICS_INTERFACE_GIT_HASH@"
 
 def show_version():
-  print "\nYou are using w2dynamics interface version %s, release %s\n"%(version, release)
+  print "\nYou are using w2dynamics interface version %s"%version
 
 def show_git_hash():
-  print "\nYou are using w2dynamics interface git hash %s based on w2dynamics git hash %s and triqs git hash %s\n"%(w2dynamics_interface_hash, w2dyn_hash, triqs_hash)
+  print "\nYou are using w2dynamics interface git hash %s based on w2dynamics git hash %s and triqs git hash %s\n"%(w2dyn_cthyb_hash, w2dyn_hash, triqs_hash)
