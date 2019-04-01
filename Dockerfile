@@ -4,7 +4,7 @@ FROM flatironinstitute/triqs:master-ubuntu-clang
 RUN if ! apt-get install -y libnfft3-dev python-configobj ; then \
     yum install -y nfft-devel python-configobj python-pip && \
     yum erase -y numpy && \
-    pip install -U numpy scipy ; \
+    pip install -U setuptools numpy scipy ; \
     pip install -U --no-binary=h5py h5py ; \
   fi
 
