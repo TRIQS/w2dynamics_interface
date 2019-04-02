@@ -18,8 +18,8 @@ extensions = ['sphinx.ext.autodoc',
 source_suffix = '.rst'
 
 project = u'w2dynamics_interface'
-author = u'Dominic Bergeron'
-copyright = u'2018, Simons Foundation'
+author = u'Andreas Hausoel and Nils Wentzell'
+copyright = u'2019, Simons Foundation'
 version = ''
 
 mathjax_path = "@TRIQS_MATHJAX_PATH@/MathJax.js?config=default"
@@ -29,7 +29,7 @@ html_theme = 'triqs'
 html_theme_path = ['@TRIQS_THEMES_PATH@']
 html_show_sphinx = False
 html_context = {'header_title': 'w2dynamics_interface',
-                'header_subtitle': 'Analytic Continuation',
+                'header_subtitle': 'Interface to the w2dynamics impurity solver',
                 'header_links': [['Install', 'install'],
                                  ['Documentation', 'contents'],
                                  ['Tutorials','tutorials'],
