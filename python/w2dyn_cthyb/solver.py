@@ -70,6 +70,11 @@ class Solver():
 
         n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
         n_warmup_cycles = params_kw.pop("n_warmup_cycles", 5000) ### default
+        max_time = params_kw.pop("max_time", -1)
+        worm = params_kw.pop("worm", False)
+        percentageworminsert = params_kw.pop("PercentageWormInsert", 0.00)
+        percentagewormreplace = params_kw.pop("PercentageWormReplace", 0.00)
+
         length_cycle = params_kw.pop("length_cycle", 50)
         h_int = params_kw.pop("h_int")
         self.last_solve_params = { "n_cycles": n_cycles, "n_warmup_cycles": n_warmup_cycles,
@@ -96,11 +101,12 @@ class Solver():
         ###                                         !   !
         ### a factor of 2 is needed to compensate the 1/2, and a minus for 
         ### exchange of the annihilators; is this correct for any two particle interaction term?
+
         U_ijkl = dict_to_matrix(extract_U_dict4(h_int), self.gf_struct)
 
         ### Make sure that the spin index is the fastest running variable
         norb = U_ijkl.shape[0]/2
-        U_ijkl = U_ijkl.reshape(norb, 2, norb, 2, norb, 2, norb, 2)
+        U_ijkl = U_ijkl.reshape(2,norb, 2,norb, 2,norb, 2,norb)
         U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
         U_ijkl = U_ijkl.reshape(norb*2, norb*2, norb*2, norb*2)
 
@@ -123,11 +129,12 @@ class Solver():
         t_ij_matrix *= -1 # W2Dynamics sign convention
 
         ### transform t_ij from (f,f) to (o,s,o,s) format
-        t_osos_tensor = NO_to_Nos(t_ij_matrix, spin_first=True)
-        norb = t_osos_tensor.shape[0]
+
+        norb = int(t_ij_matrix.shape[0]/2)
+        t_ij_matrix = t_ij_matrix.reshape(2, norb, 2, norb)
+        t_osos_tensor = t_ij_matrix.transpose(1,0, 3,2)
 
         ftau, _, __ = triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(self.Delta_tau)
-        print 'ftau.shape', ftau.shape
 
         ### now comes w2dyn!
         # Make a temporary files with input parameters
@@ -157,7 +164,7 @@ TaudiffMax = -1.0""" % norb
         for name, d in self.Delta_tau:
 
             blocksize = d.data.shape[-1]
-            print "blocksize", blocksize
+            #print "blocksize", blocksize
             if blocksize > max_blocksize:
                 max_blocksize = blocksize
 
@@ -166,7 +173,10 @@ TaudiffMax = -1.0""" % norb
         else:
             cfg["QMC"]["offdiag"] = 1
 
-        print 'cfg["QMC"]["offdiag"] ',  cfg["QMC"]["offdiag"]
+        ### complex worms are not yet existing
+        if self.complex and worm:
+            print 'complex and worm together not yet implemented'
+            exit()
 
         if self.complex:
             cfg["QMC"]["complex"] = 1
@@ -181,7 +191,6 @@ TaudiffMax = -1.0""" % norb
             cfg["QMC"]["Percentage4OperatorMove"] = 0.005
         else:
             cfg["QMC"]["Percentage4OperatorMove"] = 0
-        print 'cfg["QMC"]["Percentage4OperatorMove"] ',  cfg["QMC"]["Percentage4OperatorMove"]
 
         cfg["QMC"]["PercentageGlobalMove"] = move_global_prob
 
@@ -189,7 +198,6 @@ TaudiffMax = -1.0""" % norb
             cfg["QMC"]["flavourchange_moves"] = 1
         else:
             cfg["QMC"]["flavourchange_moves"] = 0
-        print 'cfg["QMC"]["flavourchange_moves"] ',  cfg["QMC"]["flavourchange_moves"]
 
         os.remove(cfg_file.name) # remove temp file with input parameters
 
@@ -209,13 +217,37 @@ TaudiffMax = -1.0""" % norb
 
         cfg["QMC"]["Nwarmups"] = length_cycle * n_warmup_cycles
         cfg["QMC"]["Nmeas"] = n_cycles
+        cfg["QMC"]["measurement_time"] = max_time
         cfg["QMC"]["Ncorr"] = length_cycle
 
         if statesampling:
             cfg["QMC"]["statesampling"] = 1
         else:
             cfg["QMC"]["statesampling"] = 0
-        print 'cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"]
+
+        if worm:
+            cfg["QMC"]["WormMeasGiw"] = 1
+            cfg["QMC"]["WormMeasGtau"] = 1
+            cfg["QMC"]["WormSearchEta"] = 1
+
+            ### set worm parameters to some default values if not set by user
+            if percentageworminsert != 0.0:
+                cfg["QMC"]["PercentageWormInsert"] = percentageworminsert
+            else:
+                cfg["QMC"]["PercentageWormInsert"] = 0.2
+            if percentagewormreplace != 0.0:
+                cfg["QMC"]["PercentageWormReplace"] = percentagewormreplace
+            else:
+                cfg["QMC"]["PercentageWormReplace"] = 0.2
+
+        if mpi.rank == 0:
+            print ' '
+            print 'specifications for w2dyn:'
+            print 'cfg["QMC"]["offdiag"] ',  cfg["QMC"]["offdiag"]
+            print 'cfg["QMC"]["Percentage4OperatorMove"] ',  cfg["QMC"]["Percentage4OperatorMove"]
+            print 'cfg["QMC"]["flavourchange_moves"] ',  cfg["QMC"]["flavourchange_moves"]
+            print 'cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"]
+
 
         ### initialize the solver; it needs the config-string
         Nseed = random_seed + mpi.rank
@@ -244,8 +276,6 @@ TaudiffMax = -1.0""" % norb
             muimp = np.real(t_osos_tensor)
             U_ijkl = np.real(U_ijkl)
  
-        print "ftau.shape", ftau.shape
-
         ### here the properties of the impurity will be defined
         imp_problem = impurity.ImpurityProblem(
             self.beta, g0inviw, fiw, fmom, ftau,
@@ -257,7 +287,7 @@ TaudiffMax = -1.0""" % norb
         ### hardcode the set of conserved quantities to number of electrons
         ### and activate the automatic minimalisation procedure of blocks 
         ### ( QN "All" does this)
-        print "imp_problem.interaction.quantum_numbers ",  imp_problem.interaction.quantum_numbers
+        #print "imp_problem.interaction.quantum_numbers ",  imp_problem.interaction.quantum_numbers
         imp_problem.interaction.quantum_numbers = ( "Nt", "All" )
         #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt", "Qzt" ) 
         #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt" )
@@ -266,20 +296,90 @@ TaudiffMax = -1.0""" % norb
         ### feed impurity problem into solver
         solver.set_problem(imp_problem)
 
-        ### overwrite dummy umatrix in solver class
-        #print "solver.umatrix.shape", solver.umatrix.shape
-        #print "U_ijkl.shape", U_ijkl.shape
-        solver.umatrix = U_ijkl
-
         ### solve impurity problem 
         mccfgcontainer = []
         iter_no = 1
         if self.complex:
+            solver.set_problem(imp_problem)
+            solver.umatrix = U_ijkl
             result = solver.solve(mccfgcontainer)
+            gtau = result.other["gtau-full"]
         else:
-            result = solver.solve(iter_no, mccfgcontainer)
- 
-        gtau = result.other["gtau-full"]
+            if not worm:
+                solver.set_problem(imp_problem)
+                solver.umatrix = U_ijkl
+                result = solver.solve(iter_no, mccfgcontainer)
+                gtau = result.other["gtau-full"]
+            else:
+
+              gtau = np.zeros(shape=(norb, 2, norb, 2, 2*self.n_tau))
+
+              from auxiliaries.compoundIndex import index2component_general
+
+              components = []
+
+              for comp_ind in range(1,(2*norb)**2+1):
+
+                  tmp = index2component_general(norb, 2, int(comp_ind))
+
+                  ### check if ftau is nonzero
+
+                  bands = tmp[1]
+                  spins = tmp[2]
+
+                  b1 = bands[0]
+                  b2 = bands[1]
+                  s1 = spins[0]
+                  s2 = spins[1]
+
+                  all_zeros = not np.any(ftau[:,b1,s1,b2,s2]>1e-5)
+
+                  if not all_zeros:
+                      components = np.append(components, comp_ind)
+
+              if mpi.rank == 0:
+                  print 'worm components to measure: ', components
+              
+              ### divide either max_time Nmeas among the nonzero components
+              if max_time <= 0:
+                  cfg["QMC"]["Nmeas"] = int(cfg["QMC"]["Nmeas"] / float(len(components)))
+              else:
+                  cfg["QMC"]["measurement_time"] = int(float(max_time) / float(len(components)))
+                      
+              for comp_ind in components:
+
+                  if mpi.rank == 0:
+                      print '--> comp_ind', comp_ind
+
+                  solver.set_problem(imp_problem)
+                  solver.umatrix = U_ijkl
+                  result, result_aux = solver.solve_component(1,2,comp_ind,mccfgcontainer)
+
+                  for i in result.other.keys():
+
+                      if "gtau-worm" in i:
+                          gtau_name = i
+
+                  tmp = index2component_general(norb, 2, int(comp_ind))
+
+                  ### check if ftau is nonzero
+
+                  bands = tmp[1]
+                  spins = tmp[2]
+
+                  b1 = bands[0]
+                  b2 = bands[1]
+                  s1 = spins[0]
+                  s2 = spins[1]
+
+                  gtau[b1,s1,b2,s2,:] = result.other[gtau_name]
+
+        if cfg["QMC"]["offdiag"] == 0 and worm == 0:
+            norbs = gtau.shape[0]
+            tmp = result.other["gtau"]
+            for b in range(0,norbs):
+                for s in range(0,2):
+                  gtau[b,s,b,s,:] = tmp[b,s,:]
 
         ### here comes the function for conversion w2dyn --> triqs
         self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
@@ -297,13 +397,12 @@ TaudiffMax = -1.0""" % norb
             self.G_iw[name].set_from_fourier(g, known_moments)
 
         ### add perturbation order as observable
-        print 'measure_pert_order ', measure_pert_order 
+        #print 'measure_pert_order ', measure_pert_order 
         if measure_pert_order:
             hist = result.other["hist"]
-            print 'hist.shape', hist.shape
+            #print 'hist.shape', hist.shape
 
         ### GF in Legendre expansion
         if measure_G_l:
             Gl = result.other["gleg-full"]
-            print 'Gl.shape', Gl.shape
-
+            #print 'Gl.shape', Gl.shape
