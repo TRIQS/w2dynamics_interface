@@ -335,6 +335,114 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, n_iw, beta, gf_struct):
 
     return G_iw
 
+
+def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct):
+    """Converts a dictionary mapping zero-padded five digits long string
+    representations of compound indices to components of the
+    two-particle Green's function as ndarrays with two fermionic
+    frequency indices nu, nu' and one bosonic frequency index omega in
+    the order [nu, nu', omega], as produced by w2dynamics, to a Triqs
+    block Green's function on a Matsubara frequency mesh with one
+    bosonic and two fermionic frequencies. Missing components are
+    filled with zeros.
+
+    Takes:
+    g4iw : mapping from compound indices to components of the two-particle Green's function
+    beta : inverse temperature
+    norb : number of orbitals
+    gf_struct : block structure of the triqs GF
+
+    Returns:
+    (Block2Gf, Block2Gf) : value and error of the two-particle Green's function with one bosonic and two fermionic frequencies
+
+    Author: Alexander Kowalski (2019) """
+    from pytriqs.gf import Gf, Block2Gf, MeshImFreq, MeshProduct
+    from w2dyn.auxiliaries import compoundIndex as ci
+
+    # get number of positive freqs from a component of the result
+    for i in range(100000):
+        try:
+            arr = g4iw["g4iw-worm/{:05}".format(i)]["value"][()]
+            n4iwf, n4iwf_check, n4iwb = arr.shape
+            assert(n4iwf == n4iwf_check)
+            n4iwf, n4iwb = n4iwf//2, n4iwb//2 + 1
+            break
+        except KeyError:
+            continue
+        except AssertionError:
+            raise ValueError("At least one component of g4iw-worm has an incorrect shape: should be (n4iwf, n4iwf, n4iwb)")
+
+        return ValueError("g4iw-worm does not contain any valid components")
+
+    # Generate frequency mesh with one bosonic frequency first and two
+    # fermionic frequencies, which is the same format as used by triqs
+    # cthyb
+    iwmesh = MeshProduct(MeshImFreq(beta=beta, S='Boson', n_max=n4iwb),
+                         MeshImFreq(beta=beta, S='Fermion', n_max=n4iwf),
+                         MeshImFreq(beta=beta, S='Fermion', n_max=n4iwf))
+
+    # Piece blocks for the triqs block Green's function together from
+    # individual components, looping over blocks and then indices,
+    # with offsets keeping track of the previous block sizes for
+    # constructing the right w2dynamics compound indices
+    offset1 = 0
+    G4iw_value_blocks = []
+    G4iw_error_blocks = []
+    for name1, basis1 in gf_struct:
+        offset2 = 0
+        value_subblocks = []
+        error_subblocks = []
+        G4iw_value_blocks.append(value_subblocks)
+        G4iw_error_blocks.append(error_subblocks)
+        for name2, basis2 in gf_struct:
+            G4iw_value_block = Gf(mesh=iwmesh, target_shape=[len(basis1),
+                                                             len(basis1),
+                                                             len(basis2),
+                                                             len(basis2)])
+            value_subblocks.append(G4iw_value_block)
+            G4iw_error_block = Gf(mesh=iwmesh, target_shape=[len(basis1),
+                                                             len(basis1),
+                                                             len(basis2),
+                                                             len(basis2)])
+            error_subblocks.append(G4iw_error_block)
+
+            for i in range(len(basis1)):
+                for j in range(len(basis1)):
+                    for k in range(len(basis2)):
+                        for l in range(len(basis2)):
+                            # we assume that spin is desired to be the
+                            # slowest changing index in the triqs
+                            # block structure, so we get orbital
+                            # indices for the compound index from the
+                            # block index by modulo and spin indices
+                            # by integer division
+                            cindex = ci.component2index_general(norb, 4,
+                                    np.array([offset1 + i, offset1 + j,
+                                              offset2 + k, offset2 + l]) % norb,
+                                    np.array([offset1 + i, offset1 + j,
+                                              offset2 + k, offset2 + l]) // norb)
+                            try:
+                                G4iw_value_block.data[:, :, :, i, j, k, l] = beta * g4iw[(
+                                    "g4iw-worm/{:05}".format(cindex))]["value"][()].transpose(2, 0, 1)
+                                G4iw_error_block.data[:, :, :, i, j, k, l] = beta * g4iw[(
+                                    "g4iw-worm/{:05}".format(cindex))]["error"][()].transpose(2, 0, 1)
+                            except KeyError:
+                                G4iw_value_block.data[:, :, :, i, j, k, l] = 0.0
+                                G4iw_error_block.data[:, :, :, i, j, k, l] = 0.0
+            offset2 += len(basis2)
+        offset1 += len(basis1)
+
+    G4iw_triqs = Block2Gf([x[0] for x in gf_struct],
+                          [x[0] for x in gf_struct],
+                          G4iw_value_blocks)
+
+    G4iw_error_triqs = Block2Gf([x[0] for x in gf_struct],
+                                [x[0] for x in gf_struct],
+                                G4iw_error_blocks)
+
+    return G4iw_triqs, G4iw_error_triqs
+
+
 def exchange_fastest_running_index_ff(array):
 
     assert len(array.shape) == 2, "length of array must be 2, but is %i" %len(array)

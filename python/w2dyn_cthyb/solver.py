@@ -24,6 +24,7 @@ from .converters import NO_to_Nos
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
 from .converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
+from .converters import w2dyn_g4iw_worm_to_triqs_block2gf
 from .extractor import extract_deltaiw_and_tij_from_G0
 
 class Solver():
@@ -73,8 +74,8 @@ class Solver():
         n_warmup_cycles = params_kw.pop("n_warmup_cycles", 5000) ### default
         max_time = params_kw.pop("max_time", -1)
         worm = params_kw.pop("worm", False)
-        percentageworminsert = params_kw.pop("PercentageWormInsert", 0.00)
-        percentagewormreplace = params_kw.pop("PercentageWormReplace", 0.00)
+        percentageworminsert = params_kw.pop("PercentageWormInsert", 0.20)
+        percentagewormreplace = params_kw.pop("PercentageWormReplace", 0.20)
 
         length_cycle = params_kw.pop("length_cycle", 50)
         h_int = params_kw.pop("h_int")
@@ -92,6 +93,9 @@ class Solver():
         statesampling = params_kw.pop("statesampling", False)
         flavourchange_moves = params_kw.pop("flavourchange_moves", False)
         move_global_prob = params_kw.pop("flavomove_global_prob", 0.005)
+        measure_g4iw_ph = params_kw.pop("measure_G2_iw_ph", False)
+        n4iwf = params_kw.pop("measure_G2_n_fermionic", 30)
+        n4iwb = params_kw.pop("measure_G2_n_bosonic", 30) - 1
 
         if isinstance(self.gf_struct,dict):
             print("WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict")
@@ -379,6 +383,49 @@ TaudiffMax = -1.0""" % norb
                   gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name].local,
                                                        axis=0)
               gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+
+        if measure_g4iw_ph:
+            # Set necessary configuration parameters for the solver
+            # and construct a new one so the Fortran module also gets
+            # them (config is currently passed in the constructor)
+            cfg["QMC"]["FourPnt"] = 8
+            cfg["QMC"]["N4iwf"] = n4iwf
+            cfg["QMC"]["N4iwb"] = n4iwb
+            cfg["QMC"]["PercentageWormInsert"] = percentageworminsert
+            cfg["QMC"]["PercentageWormReplace"] = percentagewormreplace
+            cfg["QMC"]["WormMeasG4iw"] = 1
+            cfg["QMC"]["WormSearchEta"] = 1
+            solver = impurity.CtHybSolver(cfg, Nseed, 0,0,0, False, mpi_comm)
+
+            g4iw = dict()
+            # the number of components could be reduced by restricting
+            # it to the requested blocks (measure_G2_blocks solve
+            # parameter) and the nonzero elements for the given
+            # interaction (if easily determinable)
+            for icomponent in range(1,(2*norb)**4+1):
+
+                if mpi.rank == 0:
+                    print('Sampling worm component {}'.format(icomponent))
+
+                solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
+                solver.umatrix = U_ijkl
+                g4result, g4result_aux = solver.solve_component(1, 4,
+                                                                icomponent,
+                                                                mccfgcontainer)
+
+                # Collect components into right format for the
+                # conversion function:
+                # g4iw["g4iw-worm/{:05}".format(compound_index)]["value"]
+                # should give the value of the component specified by
+                # compound_index and replacing "value" by "error" the
+                # error
+                for i in g4result.other.keys():
+                    if "g4iw-worm" in i:
+                        g4iw[i] = g4result.other[i]
+
+            self.G2_iw_ph, self.G2_iw_ph_error = (
+                w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, self.beta,
+                                                  norb, self.gf_struct))
 
         if cfg["QMC"]["offdiag"] == 0 and worm == 0:
             def bs_diagflat(bs_array):
