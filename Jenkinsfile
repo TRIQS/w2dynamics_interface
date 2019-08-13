@@ -145,7 +145,7 @@ Changes:
 End of build log:
 \${BUILD_LOG,maxLines=60}
     """,
-    to: 'nwentzell@flatironinstitute.org, hstrand@flatironinstitute.org, dsimon@flatironinstitute.org',
+    to: 'nwentzell@flatironinstitute.org, hstrand@flatironinstitute.org, dsimon@flatironinstitute.org, andreas.hausoel@physik.uni-wuerzburg.de',
     recipientProviders: [
       [$class: 'DevelopersRecipientProvider'],
     ],
