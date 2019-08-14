@@ -5,6 +5,8 @@ ARG APPNAME
 COPY requirements.txt /src/$APPNAME/requirements.txt
 RUN pip install -r /src/$APPNAME/requirements.txt
 
+RUN apt-get install -y libnfft3-dev || yum install -y nfft-devel
+
 COPY . $SRC/$APPNAME
 WORKDIR $BUILD/$APPNAME
 RUN chown build .
