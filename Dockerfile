@@ -1,14 +1,10 @@
 # See ../triqs/packaging for other options
 FROM flatironinstitute/triqs:master-ubuntu-clang
+ARG APPNAME
 
-RUN if ! apt-get install -y libnfft3-dev python-configobj ; then \
-    yum install -y nfft-devel python-configobj python-pip && \
-    yum erase -y numpy && \
-    pip install -U setuptools numpy 'scipy<1.3' ; \
-    pip install -U --no-binary=h5py h5py ; \
-  fi
+COPY requirements.txt /src/$APPNAME/requirements.txt
+RUN pip install -r /src/$APPNAME/requirements.txt
 
-ARG APPNAME=w2dynamics_interface
 COPY . $SRC/$APPNAME
 WORKDIR $BUILD/$APPNAME
 RUN chown build .
