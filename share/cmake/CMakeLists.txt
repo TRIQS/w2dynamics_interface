@@ -6,5 +6,3 @@ install(
     ${CMAKE_CURRENT_BINARY_DIR}/app4triqs-config-version.cmake
   DESTINATION lib/cmake/app4triqs
 )
-
-install(EXPORT app4triqs-targets NAMESPACE app4triqs:: DESTINATION lib/cmake/app4triqs)

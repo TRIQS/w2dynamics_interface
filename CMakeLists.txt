@@ -59,38 +59,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
-# Build static libraries
-set(BUILD_SHARED_LIBS OFF)
-
-# Export the list of compile-commands into compile_commands.json
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# Global compiler options
-add_compile_options(
-  $<$<CONFIG:Debug>:-Og>
-  $<$<CONFIG:Debug>:-ggdb3>
-)
-
-# Create an Interface target for compiler warnings
-add_library(project_warnings INTERFACE)
-install(TARGETS project_warnings EXPORT app4triqs-targets)
-target_compile_options(project_warnings
-  INTERFACE
-    -Wall
-    -Wextra
-    -Wpedantic
-    -Wno-sign-compare
-    $<$<CXX_COMPILER_ID:GNU>:-Wshadow=local>
-    $<$<CXX_COMPILER_ID:Clang>:-Wshadow>
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-gcc-compat>
-)
-
-# #############
-# Build Project
-
-# Build and install the app4triqs library
-add_subdirectory(c++/app4triqs)
-
 # Tests
 option(Build_Tests "Build tests" ON)
 if(Build_Tests)
