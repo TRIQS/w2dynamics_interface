@@ -11,12 +11,12 @@ def keepInstall = !env.BRANCH_NAME.startsWith("PR-")
 properties([
   disableConcurrentBuilds(),
   buildDiscarder(logRotator(numToKeepStr: '10', daysToKeepStr: '30')),
-  pipelineTriggers([
+  pipelineTriggers(keepInstall ? [
     upstream(
       threshold: 'SUCCESS',
       upstreamProjects: triqsProject
     )
-  ])
+  ] : [])
 ])
 
 /* map of all builds to run, populated below */
@@ -93,10 +93,11 @@ try {
   parallel platforms
   if (keepInstall) { node("docker") {
     /* Publish results */
-    stage("publish") { timeout(time: 1, unit: 'HOURS') {
+    stage("publish") { timeout(time: 5, unit: 'MINUTES') {
       def commit = sh(returnStdout: true, script: "git rev-parse HEAD").trim()
       def release = env.BRANCH_NAME == "master" || env.BRANCH_NAME == "unstable" || sh(returnStdout: true, script: "git describe --exact-match HEAD || true").trim()
       def workDir = pwd()
+      lock('triqs_publish') {
       /* Update documention on gh-pages branch */
       dir("$workDir/gh-pages") {
         def subdir = "${projectName}/${env.BRANCH_NAME}"
@@ -110,7 +111,23 @@ try {
           git commit --author='Flatiron Jenkins <jenkins@flatironinstitute.org>' --allow-empty -m 'Generated documentation for ${subdir}' -m '${env.BUILD_TAG} ${commit}'
         """
         // note: credentials used above don't work (need JENKINS-28335)
-        sh "git push origin master || { git pull --rebase origin master && git push origin master ; }"
+        sh "git push origin master"
+      }
+      /* Update packaging repo submodule */
+      if (release) { dir("$workDir/packaging") { try {
+        git(url: "ssh://git@github.com/TRIQS/packaging.git", branch: env.BRANCH_NAME, credentialsId: "ssh", changelog: false)
+        // note: credentials used above don't work (need JENKINS-28335)
+        sh """#!/bin/bash -ex
+          dir="${projectName}"
+          [[ -d triqs_\$dir ]] && dir=triqs_\$dir || [[ -d \$dir ]]
+          echo "160000 commit ${commit}\t\$dir" | git update-index --index-info
+          git commit --author='Flatiron Jenkins <jenkins@flatironinstitute.org>' -m 'Autoupdate ${projectName}' -m '${env.BUILD_TAG}'
+          git push origin ${env.BRANCH_NAME}
+        """
+      } catch (err) {
+        /* Ignore, non-critical -- might not exist on this branch */
+        echo "Failed to update packaging repo"
+      } } }
       }
     } }
   } }
@@ -133,7 +150,7 @@ Changes:
 End of build log:
 \${BUILD_LOG,maxLines=60}
     """,
-    to: 'nwentzell@flatironinstitute.org, hstrand@flatironinstitute.org, dsimon@flatironinstitute.org, andreas.hausoel@physik.uni-wuerzburg.de',
+    to: 'nwentzell@flatironinstitute.org, dsimon@flatironinstitute.org, andreas.hausoel@physik.uni-wuerzburg.de',
     recipientProviders: [
       [$class: 'DevelopersRecipientProvider'],
     ],
