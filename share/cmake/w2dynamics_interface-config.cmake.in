@@ -1,0 +1,21 @@
+# This file allows other CMake Projects to find us
+# We provide general project information
+# and reestablish the exported CMake Targets
+
+# Multiple inclusion guard
+if(NOT W2DYNAMICS_INTERFACE_FOUND)
+set(W2DYNAMICS_INTERFACE_FOUND True)
+
+# version
+set(W2DYNAMICS_INTERFACE_VERSION @PROJECT_VERSION@)
+set(W2DYNAMICS_INTERFACE_GIT_HASH @PROJECT_GIT_HASH@)
+
+# Root of the installation
+set(W2DYNAMICS_INTERFACE_ROOT  @CMAKE_INSTALL_PREFIX@)
+
+message(STATUS "Found w2dynamics_interface-config.cmake with version @PROJECT_VERSION@, hash = @PROJECT_GIT_HASH@")
+
+# Was the Project built with Documentation?
+set(W2DYNAMICS_INTERFACE_WITH_DOCUMENTATION @Build_Documentation@)
+
+endif()

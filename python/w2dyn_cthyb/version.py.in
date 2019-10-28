@@ -1,7 +1,7 @@
-version = "@W2DYNAMICS_INTERFACE_VERSION@"
+version = "@PROJECT_VERSION@"
 triqs_hash = "@TRIQS_GIT_HASH@"
 w2dyn_hash = "@W2DYN_GIT_HASH@"
-w2dyn_cthyb_hash = "@W2DYNAMICS_INTERFACE_GIT_HASH@"
+w2dyn_cthyb_hash = "@PROJECT_GIT_HASH@"
 
 def show_version():
   print "\nYou are using w2dynamics interface version %s"%version

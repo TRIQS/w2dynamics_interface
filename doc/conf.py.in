@@ -3,6 +3,7 @@
 # TRIQS documentation build configuration file
 
 import sys
+sys.path.insert(0, "@TRIQS_SPHINXEXT_PATH@/autorun")
 sys.path.insert(0, "@TRIQS_SPHINXEXT_PATH@/numpydoc")
 
 extensions = ['sphinx.ext.autodoc',
@@ -12,18 +13,19 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.todo',
               'sphinx.ext.viewcode',
               'sphinx.ext.autosummary',
+              'numpydoc',
               'plot_directive',
-              'numpydoc']
+              'autorun']
 
 source_suffix = '.rst'
 
 project = u'w2dynamics_interface'
-author = u'Andreas Hausoel and Nils Wentzell'
 copyright = u'2019, Simons Foundation'
-version = ''
+author = u'A. Hausoel and N. Wentzell'
+version = '@PROJECT_VERSION@'
 
 mathjax_path = "@TRIQS_MATHJAX_PATH@/MathJax.js?config=default"
-templates_path = ['@CMAKE_SOURCE_DIR@/doc/_templates']
+templates_path = ['@PROJECT_SOURCE_DIR@/doc/_templates']
 
 html_theme = 'triqs'
 html_theme_path = ['@TRIQS_THEMES_PATH@']
@@ -31,13 +33,13 @@ html_show_sphinx = False
 html_context = {'header_title': 'w2dynamics_interface',
                 'header_subtitle': 'Interface to the w2dynamics impurity solver',
                 'header_links': [['Install', 'install'],
-                                 ['Documentation', 'contents'],
+                                 ['Documentation', 'documentation'],
                                  ['Tutorials','tutorials'],
                                  ['Issues', 'issues'],
                                  ['About w2dynamics_interface', 'about']]}
-html_static_path = ['@CMAKE_SOURCE_DIR@/doc/_static']
+html_static_path = ['@PROJECT_SOURCE_DIR@/doc/_static']
 html_sidebars = {'index': ['sideb.html', 'searchbox.html']}
 
 htmlhelp_basename = 'w2dynamics_interface_doc'
 
-intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None), 'triqslibs': ('https://triqs.github.io/triqs/master', None)}
+intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None), 'triqslibs': ('https://triqs.github.io/triqs/latest', None)}
