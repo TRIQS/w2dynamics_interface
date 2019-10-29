@@ -3,7 +3,7 @@
 # To be installed as ${MODULEPATH}/w2dynamics_interface/@W2DYNAMICS_INTERFACE_VERSION@
 
 set     name        w2dynamics_interface
-set     version     @W2DYNAMICS_INTERFACE_VERSION@
+set     version     @PROJECT_VERSION@
 set     root        @CMAKE_INSTALL_PREFIX@
 set     git_hash    @PROJECT_GIT_HASH@
 
