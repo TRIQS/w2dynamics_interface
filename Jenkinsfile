@@ -70,7 +70,7 @@ for (int i = 0; i < osxPlatforms.size(); i++) {
         "CPLUS_INCLUDE_PATH=$triqsDir/include:${env.BREW}/include",
         "LIBRARY_PATH=$triqsDir/lib:${env.BREW}/lib",
         "CMAKE_PREFIX_PATH=$triqsDir/lib/cmake/triqs",
-	 "NPY_DISTUTILS_APPEND_FLAGS=1"]) {
+        "NPY_DISTUTILS_APPEND_FLAGS=1"]) {
         deleteDir()
         /* note: this is installing into the parent (triqs) venv (install dir), which is thus shared among apps and so not be completely safe */
         sh "pip install -r $srcDir/requirements.txt"
