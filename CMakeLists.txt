@@ -28,6 +28,7 @@ endif()
 # ############
 # Define Project
 project(W2DYNAMICS_INTERFACE VERSION 2.2.0 LANGUAGES Fortran C CXX)
+get_directory_property(IS_SUBPROJECT PARENT_DIRECTORY)
 
 # ############
 # Load TRIQS and CPP2PY
@@ -48,6 +49,7 @@ endif()
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR (NOT IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX}))
   message(STATUS "No install prefix given (or invalid). Defaulting to TRIQS_ROOT")
   set(CMAKE_INSTALL_PREFIX ${TRIQS_ROOT} CACHE PATH "default install path" FORCE)
+  set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT FALSE)
 endif()
 message(STATUS "-------- CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX} --------")
 
@@ -93,7 +95,7 @@ install(FILES ${W2DYN_ROOT}/__init__.py DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT
 
 # Tests
 option(Build_Tests "Build tests" ON)
-if(Build_Tests)
+if(Build_Tests AND NOT IS_SUBPROJECT)
   enable_testing()
   add_subdirectory(test)
 endif()
@@ -104,7 +106,7 @@ if(TRIQS_WITH_PYTHON_SUPPORT)
 
   # Build the documentation
   option(Build_Documentation "Build documentation" OFF)
-  if(Build_Documentation)
+  if(Build_Documentation AND NOT IS_SUBPROJECT)
     if(NOT TRIQS_WITH_DOCUMENTATION)
       message(WARNING "TRIQS was installed without documentation! Cannot build documentation.")
     else()
@@ -123,7 +125,7 @@ add_subdirectory(share)
 # Debian Package
 
 option(BUILD_DEBIAN_PACKAGE "Build a deb package" OFF)
-if(BUILD_DEBIAN_PACKAGE)
+if(BUILD_DEBIAN_PACKAGE AND NOT IS_SUBPROJECT)
   if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/usr")
     message(FATAL_ERROR "CMAKE_INSTALL_PREFIX must be /usr for packaging")
   endif()
