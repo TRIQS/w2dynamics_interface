@@ -7,7 +7,7 @@ ar_w2dyn = HDFArchive('aim_solution_w2dyn.h5','r')
 ar_triqs = HDFArchive('aim_solution_triqs.h5','r')
 
 beta = ar_triqs["G_iw/down/mesh/domain/beta"]
-print "beta", beta
+print("beta", beta)
 
 ### plot Matsubara GF
 oplot(ar_triqs['G_iw']['up'][0,0], '-', x_window = (-25,25), mode = 'R', name = "Re G$_{triqs}$")

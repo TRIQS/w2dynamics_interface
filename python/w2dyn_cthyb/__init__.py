@@ -29,4 +29,4 @@ CODE_VERSION_STRING = ".".join(map(str,CODE_VERSION))
 CODE_DATE = "July 2018"
 OUTPUT_VERSION = 2, 2
 
-if mpi.is_master_node(): print((BANNER % (CODE_VERSION_STRING, CODE_DATE)))
+if mpi.is_master_node(): print(BANNER % (CODE_VERSION_STRING, CODE_DATE))
