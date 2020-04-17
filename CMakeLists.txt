@@ -64,7 +64,7 @@ message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
 
 # --- Define the w2dynamics interface version numbers and get the git hash
-set(W2DYN_GIT_HASH 4d530d46fc6dd4583cf0f698ae85a477e73682f0)
+set(W2DYN_GIT_HASH b5d77e3dc257e61235e9a0bdc9ce750fb6f69d41)
 message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
 
 # --- Build w2dynamics as an external project
@@ -72,8 +72,7 @@ get_property(BLAS_LAPACK_LIBRARIES TARGET triqs::blas_lapack PROPERTY INTERFACE_
 get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES)
 
 include(ExternalProject)
-set(W2DYN_ROOT ${CMAKE_INSTALL_PREFIX})
-ExternalProject_Add(w2dyn
+ExternalProject_Add(w2dynamics
   PREFIX w2dyn_project
   GIT_REPOSITORY https://github.com/wentzell/w2dynamics
   GIT_TAG ${W2DYN_GIT_HASH}
@@ -89,9 +88,8 @@ ExternalProject_Add(w2dyn
 	     -DNFFT_ROOT=${NFFT_ROOT}
   INSTALL_COMMAND ""
 )
-set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dyn)
-install(DIRECTORY ${W2DYN_ROOT}/auxiliaries ${W2DYN_ROOT}/dmft ${W2DYN_ROOT}/maxent DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT}/w2dyn FILES_MATCHING PATTERN "*.py" PATTERN "*.so" PATTERN "configspec")
-install(FILES ${W2DYN_ROOT}/__init__.py DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT}/w2dyn)
+set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dynamics)
+install(DIRECTORY ${W2DYN_ROOT}/w2dyn DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT} FILES_MATCHING PATTERN "*.py" PATTERN "*.so" PATTERN "configspec")
 
 # Tests
 option(Build_Tests "Build tests" ON)
