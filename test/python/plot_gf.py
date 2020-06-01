@@ -1,6 +1,6 @@
-from pytriqs.gf import *
-from pytriqs.archive import *
-from pytriqs.plot.mpl_interface import oplot, oploti, oplotr, plt
+from triqs.gf import *
+from h5 import *
+from triqs.plot.mpl_interface import oplot, oploti, oplotr, plt
 import numpy as np
 
 ar_w2dyn = HDFArchive('aim_solution_w2dyn.h5','r')

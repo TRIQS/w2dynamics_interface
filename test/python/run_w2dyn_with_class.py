@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from pytriqs.gf import *
-from pytriqs.operators import *
-from pytriqs.archive import HDFArchive
-import pytriqs.utility.mpi as mpi
+from triqs.gf import *
+from triqs.operators import *
+from h5 import HDFArchive
+import triqs.utility.mpi as mpi
 import numpy as np
 
 #w2dyn=False
@@ -55,7 +55,7 @@ else:
             measure_G_l = False)                      # Measure G_l
 
 ### plot Greens function
-#from pytriqs.plot.mpl_interface import oplot, oploti, oplotr, plt
+#from triqs.plot.mpl_interface import oplot, oploti, oplotr, plt
 #oplot(S.G_tau)
 #plt.show()
 

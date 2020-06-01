@@ -6,7 +6,7 @@ def get_test_impurity_model(norb=2, ntau=1000, beta=10.0):
 
     """ Function that generates a random impurity model for testing """
 
-    from pytriqs.operators import c, c_dag, Operator, dagger
+    from triqs.operators import c, c_dag, Operator, dagger
 
     from pyed.OperatorUtils import fundamental_operators_from_gf_struct
     from pyed.OperatorUtils import symmetrize_quartic_tensor
@@ -48,7 +48,7 @@ def get_test_impurity_model(norb=2, ntau=1000, beta=10.0):
     #print 'H_loc =', H_loc
     #print "H_loc.type", H_loc.type()
 
-    from pytriqs.gf import MeshImTime, BlockGf
+    from triqs.gf import MeshImTime, BlockGf
 
     mesh = MeshImTime(beta, 'Fermion', ntau)
     Delta_tau = BlockGf(mesh=mesh, gf_struct=gf_struct)
@@ -198,7 +198,7 @@ def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau_osost, beta, gf_struct):
     ### generate triqs Green function with same dimension than
     ### the input; this may not be a good idea if worm is used
     ### since then the output can have another structure...
-    from pytriqs.gf import MeshImTime, BlockGf
+    from triqs.gf import MeshImTime, BlockGf
 
     tau_mesh = MeshImTime(beta, 'Fermion', n_tau)
 
@@ -315,7 +315,7 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, n_iw, beta, gf_struct):
     ### generate triqs Green function with same dimension than
     ### the input; this may not be a good idea if worm is used
     ### since then the output can have another structure...
-    from pytriqs.gf import MeshImFreq, BlockGf
+    from triqs.gf import MeshImFreq, BlockGf
     iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
     G_iw = BlockGf(mesh=iw_mesh, gf_struct=gf_struct)
 

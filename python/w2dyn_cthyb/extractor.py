@@ -1,7 +1,7 @@
 import numpy as np
 from converters import *
-from pytriqs.gf import MeshImFreq
-from pytriqs.gf import BlockGf, inverse, iOmega_n, Fourier
+from triqs.gf import MeshImFreq
+from triqs.gf import BlockGf, inverse, iOmega_n, Fourier
 
 # ----------------------------------------------------------------------    
 def extract_deltaiw_and_tij_from_G0(G0_iw, gf_struct):

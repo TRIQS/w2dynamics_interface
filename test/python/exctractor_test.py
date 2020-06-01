@@ -2,8 +2,8 @@
 
 from w2dyn_cthyb.converters import *
 from w2dyn_cthyb.extractor import *
-from pytriqs.gf import MeshImFreq
-from pytriqs.gf import BlockGf, inverse, iOmega_n, Fourier
+from triqs.gf import MeshImFreq
+from triqs.gf import BlockGf, inverse, iOmega_n, Fourier
 
 import numpy as np
 
@@ -59,7 +59,7 @@ for block, g0_iw in G0_iw:
 Delta_iw_reconst, H_0_reconst = extract_deltaiw_and_tij_from_G0(G0_iw, gf_struct)
 
 ### compare Delta
-from pytriqs.utility.comparison_tests import *
+from triqs.utility.comparison_tests import *
 assert_block_gfs_are_close(Delta_iw_reconst, Delta_iw)
 
 ### compare H_0

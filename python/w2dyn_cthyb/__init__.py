@@ -1,4 +1,4 @@
-from pytriqs.utility import mpi
+from triqs.utility import mpi
 
 from solver import Solver
 from converters import get_test_impurity_model,NO_to_Nos,triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau,triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw,generate_testimpurity_with_triqs

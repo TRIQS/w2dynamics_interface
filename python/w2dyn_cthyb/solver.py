@@ -9,11 +9,11 @@ import tempfile
 import numpy as np
 from scipy.linalg import block_diag
 
-import pytriqs.utility.mpi as mpi
-from pytriqs.gf import Fourier
-from pytriqs.gf import MeshImTime, MeshImFreq, BlockGf
-from pytriqs.gf.tools import conjugate
-from pytriqs.operators.util.extractors import *
+import triqs.utility.mpi as mpi
+from triqs.gf import Fourier
+from triqs.gf import MeshImTime, MeshImFreq, BlockGf
+from triqs.gf.tools import conjugate
+from triqs.operators.util.extractors import *
 
 import w2dyn.auxiliaries.CTQMC
 import w2dyn.dmft.impurity as impurity

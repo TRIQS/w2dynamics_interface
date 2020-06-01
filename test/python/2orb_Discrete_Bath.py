@@ -4,11 +4,11 @@ import sys, os
 from itertools import product
 from numpy import matrix, array, diag
 
-from pytriqs.archive import HDFArchive
-from pytriqs.utility import mpi
-from pytriqs.gf import Gf, MeshImFreq, iOmega_n, inverse, BlockGf, Fourier
-from pytriqs.operators import c, c_dag, n
-from pytriqs.operators.util.hamiltonians import h_int_kanamori
+from h5 import HDFArchive
+from triqs.utility import mpi
+from triqs.gf import Gf, MeshImFreq, iOmega_n, inverse, BlockGf, Fourier
+from triqs.operators import c, c_dag, n
+from triqs.operators.util.hamiltonians import h_int_kanamori
 from itertools import product
 from numpy import matrix, array, diag, eye
 from numpy.linalg import inv
@@ -111,7 +111,7 @@ if mpi.is_master_node():
         results["G_iw"] = S.G_iw
         results["G_tau"] = S.G_tau
 
-from pytriqs.utility.h5diff import h5diff
+from triqs.utility.h5diff import h5diff
 h5diff("2orb_Discrete_Bath.ref.h5","2orb_Discrete_Bath.out.h5")
 
 
