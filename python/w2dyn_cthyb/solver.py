@@ -19,11 +19,11 @@ import w2dyn.auxiliaries.CTQMC
 import w2dyn.dmft.impurity as impurity
 import w2dyn.auxiliaries.config as config
 
-from converters import NO_to_Nos
-from converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
-from converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
-from converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
-from extractor import extract_deltaiw_and_tij_from_G0
+from .converters import NO_to_Nos
+from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
+from .converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
+from .converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
+from .extractor import extract_deltaiw_and_tij_from_G0
 
 class Solver():
     
@@ -93,8 +93,8 @@ class Solver():
         move_global_prob = params_kw.pop("flavomove_global_prob", 0.005)
 
         if isinstance(self.gf_struct,dict):
-            print "WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict"
-            self.gf_struct = [ [k, v] for k, v in self.gf_struct.iteritems() ]
+            print("WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict")
+            self.gf_struct = [ [k, v] for k, v in self.gf_struct.items() ]
 
         ### Andi: the definition in the U-Matrix in w2dyn is
         ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k
@@ -175,7 +175,7 @@ TaudiffMax = -1.0""" % norb
 
         ### complex worms are not yet existing
         if self.complex and worm:
-            print 'complex and worm together not yet implemented'
+            print('complex and worm together not yet implemented')
             exit()
 
         if self.complex:
@@ -241,12 +241,12 @@ TaudiffMax = -1.0""" % norb
                 cfg["QMC"]["PercentageWormReplace"] = 0.2
 
         if mpi.rank == 0:
-            print ' '
-            print 'specifications for w2dyn:'
-            print 'cfg["QMC"]["offdiag"] ',  cfg["QMC"]["offdiag"]
-            print 'cfg["QMC"]["Percentage4OperatorMove"] ',  cfg["QMC"]["Percentage4OperatorMove"]
-            print 'cfg["QMC"]["flavourchange_moves"] ',  cfg["QMC"]["flavourchange_moves"]
-            print 'cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"]
+            print(' ')
+            print('specifications for w2dyn:')
+            print('cfg["QMC"]["offdiag"] ',  cfg["QMC"]["offdiag"])
+            print('cfg["QMC"]["Percentage4OperatorMove"] ',  cfg["QMC"]["Percentage4OperatorMove"])
+            print('cfg["QMC"]["flavourchange_moves"] ',  cfg["QMC"]["flavourchange_moves"])
+            print('cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"])
 
 
         ### initialize the solver; it needs the config-string
@@ -282,7 +282,7 @@ TaudiffMax = -1.0""" % norb
             muimp, atom.dd_int, None, None, symmetry_moves,
             paramag)
 
-        print "\n" + "."*40
+        print("\n" + "."*40)
 
         ### hardcode the set of conserved quantities to number of electrons
         ### and activate the automatic minimalisation procedure of blocks 
@@ -338,7 +338,7 @@ TaudiffMax = -1.0""" % norb
                       components = np.append(components, comp_ind)
 
               if mpi.rank == 0:
-                  print 'worm components to measure: ', components
+                  print('worm components to measure: ', components)
               
               ### divide either max_time Nmeas among the nonzero components
               if max_time <= 0:
@@ -349,13 +349,13 @@ TaudiffMax = -1.0""" % norb
               for comp_ind in components:
 
                   if mpi.rank == 0:
-                      print '--> comp_ind', comp_ind
+                      print('--> comp_ind', comp_ind)
 
                   solver.set_problem(imp_problem)
                   solver.umatrix = U_ijkl
                   result, result_aux = solver.solve_component(1,2,comp_ind,mccfgcontainer)
 
-                  for i in result.other.keys():
+                  for i in list(result.other.keys()):
 
                       if "gtau-worm" in i:
                           gtau_name = i

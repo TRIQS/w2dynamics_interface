@@ -1,5 +1,5 @@
 import numpy as np
-from converters import *
+from .converters import *
 from triqs.gf import MeshImFreq
 from triqs.gf import BlockGf, inverse, iOmega_n, Fourier
 
@@ -86,14 +86,14 @@ if __name__ == '__main__':
         
     
     # ------------------------------------------------------------------
-    print " "
-    print "compare H_loc:"
+    print(" ")
+    print("compare H_loc:")
     for i,j in zip(H_loc_original,H_loc_reconst):
-        print "np.max(i-j)", np.max(i-j)
-        print "np.min(i-j)", np.min(i-j)
+        print("np.max(i-j)", np.max(i-j))
+        print("np.min(i-j)", np.min(i-j))
 
-    print " "
-    print "compare delta:"
+    print(" ")
+    print("compare delta:")
     
     for block, _ in Delta_iw:
         d1 = Delta_iw[block].data
@@ -101,8 +101,8 @@ if __name__ == '__main__':
 
         #np.testing.assert_array_almost_equal(d1,d2)
 
-        print "np.amax(np.real(d1-d2))", np.amax(np.real(d1-d2))
-        print "np.amin(np.real(d1-d2))", np.amin(np.real(d1-d2))
-        print "np.amax(np.imag(d1-d2))", np.amax(np.imag(d1-d2))
-        print "np.amin(np.imag(d1-d2))", np.amin(np.imag(d1-d2))
+        print("np.amax(np.real(d1-d2))", np.amax(np.real(d1-d2)))
+        print("np.amin(np.real(d1-d2))", np.amin(np.real(d1-d2)))
+        print("np.amax(np.imag(d1-d2))", np.amax(np.imag(d1-d2)))
+        print("np.amin(np.imag(d1-d2))", np.amin(np.imag(d1-d2)))
 

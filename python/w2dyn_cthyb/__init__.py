@@ -1,7 +1,7 @@
 from triqs.utility import mpi
 
-from solver import Solver
-from converters import get_test_impurity_model,NO_to_Nos,triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau,triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw,generate_testimpurity_with_triqs
+from .solver import Solver
+from .converters import get_test_impurity_model,NO_to_Nos,triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau,triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw,generate_testimpurity_with_triqs
 
 
 __all__ = ['Solver','get_test_impurity_model','NO_to_Nos','triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau','triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw','generate_testimpurity_with_triqs']
@@ -29,4 +29,4 @@ CODE_VERSION_STRING = ".".join(map(str,CODE_VERSION))
 CODE_DATE = "July 2018"
 OUTPUT_VERSION = 2, 2
 
-if mpi.is_master_node(): print BANNER % (CODE_VERSION_STRING, CODE_DATE)
+if mpi.is_master_node(): print((BANNER % (CODE_VERSION_STRING, CODE_DATE)))
