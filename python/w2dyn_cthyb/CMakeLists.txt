@@ -8,5 +8,5 @@ foreach(file ${python_sources})
 endforeach()
 
 # Install python modules to proper location
-set(PYTHON_LIB_DEST ${TRIQS_PYTHON_LIB_DEST_ROOT}/w2dynamics_interface)
+set(PYTHON_LIB_DEST ${TRIQS_PYTHON_LIB_DEST_ROOT}/${PROJECT_NAME})
 install(FILES ${python_sources} ${CMAKE_CURRENT_BINARY_DIR}/version.py DESTINATION ${PYTHON_LIB_DEST})
