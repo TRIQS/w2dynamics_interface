@@ -70,6 +70,36 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/share/cmake/Modules)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Type of build" FORCE)
 endif()
+message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
+
+
+# --- Define the w2dynamics interface version numbers and get the git hash
+set(W2DYN_GIT_HASH b5d77e3dc257e61235e9a0bdc9ce750fb6f69d41)
+message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
+
+# --- Build w2dynamics as an external project
+get_property(BLAS_LAPACK_LIBRARIES TARGET triqs::blas_lapack PROPERTY INTERFACE_LINK_LIBRARIES)
+get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES)
+
+include(ExternalProject)
+ExternalProject_Add(w2dynamics
+  PREFIX w2dyn_project
+  GIT_REPOSITORY https://github.com/wentzell/w2dynamics
+  GIT_TAG ${W2DYN_GIT_HASH}
+  GIT_CONFIG advice.detachedHead=false
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DPYTHON_EXECUTABLE=${TRIQS_PYTHON_EXECUTABLE}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+            -DBLAS_LIBRARIES=${BLAS_LAPACK_LIBRARIES}
+            -DLAPACK_LIBRARIES=${BLAS_LAPACK_LIBRARIES}
+            -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
+            -DNFFT_ROOT=${NFFT_ROOT}
+  INSTALL_COMMAND ""
+)
+set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dynamics)
+install(DIRECTORY ${W2DYN_ROOT}/w2dyn DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT} FILES_MATCHING PATTERN "*.py" PATTERN "*.so" PATTERN "configspec")
 if(NOT IS_SUBPROJECT)
   message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 endif()
