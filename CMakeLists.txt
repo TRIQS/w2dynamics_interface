@@ -31,7 +31,7 @@ endif()
 
 # ############
 # Define Project
-project(w2dynamics_interface VERSION 3.0.0 LANGUAGES C CXX)
+project(w2dynamics_interface VERSION 3.0.0 LANGUAGES C CXX Fortran)
 get_directory_property(IS_SUBPROJECT PARENT_DIRECTORY)
 
 # ############
