@@ -136,7 +136,7 @@ def triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(G_tau):
         offset += size_block
 
     ### spin is slow running index, but in w2dyn it is fastest running index
-    g_tosos = g_tff.reshape(ntau,2,full_size/2,2,full_size/2)
+    g_tosos = g_tff.reshape(ntau,2,full_size//2,2,full_size//2)
     g_tosos = g_tosos.transpose(0,2,1,4,3)
 
     return g_tosos, beta, ntau
@@ -250,7 +250,7 @@ def triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G_iw):
     beta = G_iw.mesh.beta
     iw = np.array([ np.real(w) + 1.0j*np.imag(w) for w in G_iw.mesh ])
     niw = len(iw)
-    np.testing.assert_almost_equal(np.imag(iw[niw/2]) * beta, np.pi)
+    np.testing.assert_almost_equal(np.imag(iw[niw//2]) * beta, np.pi)
     
     g_stoo = np.array([ G_iw.data for block_name, G_iw in G_iw ])
     nblocks, nt, size1, size2 = g_stoo.shape
@@ -273,7 +273,7 @@ def triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G_iw):
         offset += size_block
 
     ### shape into spin structure
-    g_tosos = g_tff.reshape(niw,full_size/2,2,full_size/2,2)
+    g_tosos = g_tff.reshape(niw,full_size//2,2,full_size//2,2)
 
     return g_tosos, beta, niw
 
@@ -344,7 +344,7 @@ def exchange_fastest_running_index_ff(array):
     assert t1 == t2
     nflav = t1
 
-    array = array.reshape(nflav/2, 2, nflav/2, 2)
+    array = array.reshape(nflav//2, 2, nflav//2, 2)
     array = array.transpose(1, 0, 3, 2)
     array = array.reshape(nflav, nflav)
 
@@ -361,7 +361,7 @@ def exchange_fastest_running_index_ffw(array):
     assert t1 == t2
     nflav = t1
 
-    array = array.reshape(nflav/2, 2, nflav/2, 2, Niw)
+    array = array.reshape(nflav//2, 2, nflav//2, 2, Niw)
     array = array.transpose(1, 0, 3, 2, 4)
     array = array.reshape(nflav, nflav, Niw)
 
