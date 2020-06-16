@@ -11,8 +11,18 @@ Basic notions
 
    w2dyn_cthyb
 
-Python reference manual
------------------------
+User guide
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   guide/aim.rst
+   guide/settingparameters
+   guide/additional_remarks
+
+Reference manual
+----------------
 
 .. toctree::
    :maxdepth: 1

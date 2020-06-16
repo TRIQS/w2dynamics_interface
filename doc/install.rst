@@ -64,7 +64,7 @@ Custom CMake options
 
 The compilation of ``w2dynamics_interface`` can be configured using CMake-options::
 
-    cmake ../w2dynamics_interface.src -DOPTION1=value1 -DOPTION2=value2 ... ../w2dynamics_interface.src
+    cmake ../w2dynamics_interface.src -DOPTION1=value1 -DOPTION2=value2 ...
 
 +-----------------------------------------------------------------+----------------------------------------------------------+
 | Options                                                         | Syntax                                                   |
