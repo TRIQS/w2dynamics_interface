@@ -148,7 +148,7 @@ Hamiltonian = Kanamori
 [QMC]
 TaudiffMax = -1.0""" % norb
 
-        cfg_file = tempfile.NamedTemporaryFile(delete=False)
+        cfg_file = tempfile.NamedTemporaryFile(delete=False, mode = "w")
         cfg_file.write(Parameters_in)
         cfg_file.close()
         
