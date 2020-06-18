@@ -18,6 +18,7 @@ from triqs.operators.util.extractors import *
 import w2dyn.auxiliaries.CTQMC
 import w2dyn.dmft.impurity as impurity
 import w2dyn.auxiliaries.config as config
+import w2dyn.auxiliaries.statistics as stat
 
 from .converters import NO_to_Nos
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
@@ -312,7 +313,7 @@ TaudiffMax = -1.0""" % norb
                 gtau = result.other["gtau-full"]
             else:
 
-              gtau = np.zeros(shape=(norb, 2, norb, 2, 2*self.n_tau))
+              gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
 
               from auxiliaries.compoundIndex import index2component_general
 
@@ -372,14 +373,29 @@ TaudiffMax = -1.0""" % norb
                   s1 = spins[0]
                   s2 = spins[1]
 
-                  gtau[b1,s1,b2,s2,:] = result.other[gtau_name]
+                  # Remove axis 0 from local samples by averaging, so
+                  # no data remains unused even if there is more than
+                  # one local sample (should not happen)
+                  gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name].local,
+                                                       axis=0)
+              gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
         if cfg["QMC"]["offdiag"] == 0 and worm == 0:
-            norbs = gtau.shape[0]
-            tmp = result.other["gtau"]
-            for b in range(0,norbs):
-                for s in range(0,2):
-                  gtau[b,s,b,s,:] = tmp[b,s,:]
+            def bs_diagflat(bs_array):
+                """Return an array with a shape extended compared to
+                that of the argument by doubling the first two axes and
+                fill it such that the returned array is diagonal with
+                respect to both pairs (axes 1 and 3 and axes 2 and 4).
+                """
+                shape_bsonly = bs_array.shape[0:2]
+                bsbs_shape = shape_bsonly + bs_array.shape
+                bsbs_array = np.zeros(bsbs_shape, dtype=bs_array.dtype)
+                for b in range(bs_array.shape[0]):
+                    for s in range(bs_array.shape[1]):
+                        bsbs_array[b, s, b, s, ...] = bs_array[b, s, ...]
+                return bsbs_array
+
+            gtau = result.other["gtau"].apply(bs_diagflat)
 
         ### here comes the function for conversion w2dyn --> triqs
         self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
