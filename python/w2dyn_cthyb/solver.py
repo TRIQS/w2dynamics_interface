@@ -354,7 +354,7 @@ TaudiffMax = -1.0""" % norb
 
                   solver.set_problem(imp_problem)
                   solver.umatrix = U_ijkl
-                  result, result_aux = solver.solve_component(1,2,comp_ind,mccfgcontainer)
+                  result_aux, result = solver.solve_component(1,2,comp_ind,mccfgcontainer)
 
                   for i in list(result.other.keys()):
 
