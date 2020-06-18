@@ -144,12 +144,13 @@ def triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(G_tau):
 # ----------------------------------------------------------------------    
 def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau_osost, beta, gf_struct):
 
-    """ Convert a W2Dynamics ndarray format with indices [osost]
+    """ Convert a DistributedSample of data in W2Dynamics
+    ndarray format with indices [osost]
     where t is time, o is orbital, s is spin index
     to a spin-block Triqs imaginary time response function 
 
     Takes: 
-    gtau : Green function as numpy array
+    gtau : Green function as DistributedSample
     beta : inverse temperature
     ntau : number of tau points (including tau=0 and beta) 
 
@@ -158,8 +159,8 @@ def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau_osost, beta, gf_struct):
 
     Author: Hugo U. R. Strand (2019) """
 
-    gtau = gtau_osost['value']
-    gtau_err = gtau_osost['error']
+    gtau = gtau_osost.mean()
+    gtau_err = gtau_osost.stderr()
 
     n_tau = gtau.shape[-1]
     assert n_tau % 2 == 0, "Need an even number of tau points to downsample to Triqs tau mesh"
