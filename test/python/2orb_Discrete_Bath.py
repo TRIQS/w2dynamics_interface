@@ -144,4 +144,5 @@ if mpi.is_master_node():
         results["G_iw"] = S.G_iw
         results["G_tau"] = S.G_tau
 
-h5diff("2orb_Discrete_Bath.ref.h5","2orb_Discrete_Bath.delta_interface.out.h5")
+h5diff("2orb_Discrete_Bath.ref.h5", "2orb_Discrete_Bath.delta_interface.out.h5",
+       precision=1.e-3)
