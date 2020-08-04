@@ -78,7 +78,6 @@ set(W2DYN_GIT_HASH 4fdda2377dc4b98a5dcc7503fa693c1adaf3c9a4)
 message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
 
 # --- Build w2dynamics as an external project
-get_property(BLAS_LAPACK_LIBRARIES TARGET triqs::blas_lapack PROPERTY INTERFACE_LINK_LIBRARIES)
 get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES)
 
 include(ExternalProject)
@@ -92,12 +91,10 @@ ExternalProject_Add(w2dynamics
              -DPYTHON_EXECUTABLE=${TRIQS_PYTHON_EXECUTABLE}
              -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
              -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
-             -DBLAS_LIBRARIES=${BLAS_LAPACK_LIBRARIES}
-             -DLAPACK_LIBRARIES=${BLAS_LAPACK_LIBRARIES}
              -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
-             -DNFFT_ROOT=${NFFT_ROOT}
   INSTALL_COMMAND ""
 )
+
 set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dynamics)
 install(DIRECTORY ${W2DYN_ROOT}/w2dyn DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT} FILES_MATCHING PATTERN "*.py" PATTERN "*.so" PATTERN "configspec")
 if(NOT IS_SUBPROJECT)
