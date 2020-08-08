@@ -1,2 +1,5 @@
 # Required python packages for this application (these should also be added to Dockerfile for Jenkins)
+numpy>=1.18
+scipy>=1.0.0
+h5py
 configobj
