@@ -112,7 +112,7 @@ if mpi.is_master_node():
         results["G_tau"] = S.G_tau
 
 from triqs.utility.h5diff import h5diff
-h5diff("2orb_Discrete_Bath.ref.h5","2orb_Discrete_Bath.out.h5")
+h5diff("2orb_Discrete_Bath.ref.h5","2orb_Discrete_Bath.out.h5", precision=1.e-5)
 
 
 # ==== Construct the CTHYB solver using the Delta_tau + h_0 Interface ====
