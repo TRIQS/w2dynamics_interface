@@ -53,8 +53,8 @@ for (int i = 0; i < dockerPlatforms.size(); i++) {
 
 /****************** osx builds (on host) */
 def osxPlatforms = [
-  ["gcc", ['CC=gcc-9', 'CXX=g++-9', 'FC=gfortran-9']]
-  /* ["clang", ['CC=$BREW/opt/llvm/bin/clang', 'CXX=$BREW/opt/llvm/bin/clang++', 'FC=gfortran-9', 'CXXFLAGS=-I$BREW/opt/llvm/include', 'LDFLAGS=-L$BREW/opt/llvm/lib']] disabled as libcxx leads to test failures due to different random number sequences */
+  ["gcc", ['CC=gcc-10', 'CXX=g++-10', 'FC=gfortran-10']]
+  /* ["clang", ['CC=$BREW/opt/llvm/bin/clang', 'CXX=$BREW/opt/llvm/bin/clang++', 'FC=gfortran-10', 'CXXFLAGS=-I$BREW/opt/llvm/include', 'LDFLAGS=-L$BREW/opt/llvm/lib']] disabled as libcxx leads to test failures due to different random number sequences */
 ]
 for (int i = 0; i < osxPlatforms.size(); i++) {
   def platformEnv = osxPlatforms[i]
@@ -82,7 +82,7 @@ for (int i = 0; i < osxPlatforms.size(); i++) {
 	  "CPLUS_INCLUDE_PATH=$venv/include:$hdf5/include:${env.BREW}/include",
 	  "LIBRARY_PATH=$venv/lib:$hdf5/lib:${env.BREW}/lib",
           "LD_LIBRARY_PATH=$hdf5/lib",
-          "PYTHONPATH=$installDir/lib/python3.7/site-packages",
+          "PYTHONPATH=$installDir/lib/python3.8/site-packages",
 	  "CMAKE_PREFIX_PATH=$venv/lib/cmake/triqs",
           "NPY_DISTUTILS_APPEND_FLAGS=1"]) {
         deleteDir()
