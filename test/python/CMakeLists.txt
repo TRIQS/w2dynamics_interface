@@ -7,7 +7,7 @@ endforeach()
 # List of all tests
 set(all_tests exctractor_test SIAM_Discrete_Bath 2orb_Discrete_Bath)
 
-string(REGEX MATCH "-stdlib=libc\\+\\+" USE_LIBCXX "$ENV{CXXFLAGS}")
+try_compile(USE_LIBCXX ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/check_libcxx.cpp)
 foreach(test ${all_tests})
   get_filename_component(test_name ${test} NAME_WE)
   get_filename_component(test_dir ${test} DIRECTORY)
