@@ -7,9 +7,10 @@ endforeach()
 # List of all tests
 set(all_tests exctractor_test SIAM_Discrete_Bath 2orb_Discrete_Bath)
 
+string(REGEX MATCH "-stdlib=libc\\+\\+" USE_LIBCXX "$ENV{CXXFLAGS}")
 foreach(test ${all_tests})
   get_filename_component(test_name ${test} NAME_WE)
   get_filename_component(test_dir ${test} DIRECTORY)
-  add_test(NAME Py_${test_name} COMMAND ${TRIQS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/${test_dir}/${test_name}.py WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${test_dir})
+  add_test(NAME Py_${test_name} COMMAND ${TRIQS_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/${test_dir}/${test_name}.py $<$<BOOL:${USE_LIBCXX}>:--libcxx> WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${test_dir})
   set_property(TEST Py_${test_name} APPEND PROPERTY ENVIRONMENT PYTHONPATH=${PROJECT_BINARY_DIR}/python:${W2DYN_ROOT}:$ENV{PYTHONPATH})
 endforeach()

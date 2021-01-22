@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os
+import sys, os, argparse
 from itertools import product
 from numpy import matrix, array, diag
 
@@ -9,6 +9,10 @@ from triqs.utility import mpi
 from triqs.gf import Gf, MeshImFreq, iOmega_n, inverse, BlockGf, Fourier
 from triqs.operators import c, c_dag, n
 from triqs.operators.util.hamiltonians import h_int_kanamori
+
+parser = argparse.ArgumentParser(description="Test arguments")
+parser.add_argument('--libcxx', action='store_true', help="Use libcxx reference data")
+args, unknown = parser.parse_known_args()
 
 # ==== System Parameters ====
 beta = 5.           # Inverse temperature
@@ -80,7 +84,10 @@ if mpi.is_master_node():
         results["G_tau"] = S.G_tau
 
 from triqs.utility.h5diff import h5diff
-h5diff("SIAM_Discrete_Bath.ref.h5","SIAM_Discrete_Bath.out.h5")
+if args.libcxx:
+    h5diff("SIAM_Discrete_Bath.libcxx.ref.h5","SIAM_Discrete_Bath.out.h5")
+else:
+    h5diff("SIAM_Discrete_Bath.ref.h5","SIAM_Discrete_Bath.out.h5")
 
 # ==== Construct the CTHYB solver using the Delta_tau + h_0 Interface ====
 constr_params = {
@@ -111,5 +118,7 @@ if mpi.is_master_node():
         results["G_iw"] = S.G_iw
         results["G_tau"] = S.G_tau
 
-from triqs.utility.h5diff import h5diff
-h5diff("SIAM_Discrete_Bath.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5")
+if args.libcxx:
+    h5diff("SIAM_Discrete_Bath.libcxx.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5")
+else:
+    h5diff("SIAM_Discrete_Bath.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5")
