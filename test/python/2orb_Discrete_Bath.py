@@ -32,6 +32,7 @@ J = 0.5                         # Hunds coupling
 spin_names = ['up', 'dn']
 orb_names  = [0, 1]
 orb_bath_names  = [0, 1, 2, 3]
+norb = len(orb_names)
 
 # Non-interacting impurity hamiltonian in matrix representation
 h_0_mat = diag(eps - mu) - matrix([[0, t],
@@ -71,7 +72,7 @@ h_coup = sum(c_dag_vec[s] * V_mat * c_bath_vec[s] + c_dag_bath_vec[s] * V_mat.tr
 h_imp = h_loc + h_coup + h_bath
 
 # ==== Green function structure ====
-gf_struct = [ [s, orb_names] for s in spin_names ]
+gf_struct = [ [s, norb] for s in spin_names ]
 
 # ==== Hybridization Function ====
 n_iw = int(10 * beta)

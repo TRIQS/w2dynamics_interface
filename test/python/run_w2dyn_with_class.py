@@ -29,7 +29,7 @@ V1, V2 = 0.38, 0.38
 
 ### Construct the impurity solver with the inverse temperature
 ### and the structure of the Green's functions
-S = Solver(beta = beta, gf_struct = [ ['up',[0]], ['down',[0]] ], n_iw=2000,  n_tau=4002)
+S = Solver(beta = beta, gf_struct = [ ['up',1], ['down',1] ], n_iw=2000,  n_tau=4002)
 
 ### the hybridistation function in Matsubara
 delta_iw_block = ( V1**2 * inverse( iOmega_n - e1 ) + V2**2 * inverse( iOmega_n - e2 ) )

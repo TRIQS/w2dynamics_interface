@@ -41,7 +41,7 @@ for i, E_i, V_i in zip([0, 1], E, V):
 h_imp = h_loc + h_coup + h_bath
 
 # ==== Green function structure ====
-gf_struct = [ [s, orb_names] for s in spin_names ]
+gf_struct = [ [s, len(orb_names)] for s in spin_names ]
 
 # ==== Hybridization Function ====
 n_iw = int(10 * beta)
