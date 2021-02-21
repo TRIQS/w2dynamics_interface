@@ -409,9 +409,9 @@ TaudiffMax = -1.0""" % norb
 
                 solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
                 solver.umatrix = U_ijkl
-                g4result, g4result_aux = solver.solve_component(1, 4,
-                                                                icomponent,
-                                                                mccfgcontainer)
+                res_gen, res_g4comp = solver.solve_comp_stats(1, 4,
+                                                              icomponent,
+                                                              mccfgcontainer)
 
                 # Collect components into right format for the
                 # conversion function:
@@ -419,13 +419,20 @@ TaudiffMax = -1.0""" % norb
                 # should give the value of the component specified by
                 # compound_index and replacing "value" by "error" the
                 # error
-                for i in g4result.other.keys():
+                for i in res_g4comp.other.keys():
                     if "g4iw-worm" in i:
-                        g4iw[i] = g4result.other[i]
+                        g4iw[i] = res_g4comp.other[i]
 
-            self.G2_iw_ph, self.G2_iw_ph_error = (
-                w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, self.beta,
-                                                  norb, self.gf_struct))
+            self.G2_iw_ph = w2dyn_g4iw_worm_to_triqs_block2gf(g4iw,
+                                                              self.beta,
+                                                              norb,
+                                                              self.gf_struct)
+            self.G2_iw_ph_error = (
+                w2dyn_g4iw_worm_to_triqs_block2gf(g4iw,
+                                                  self.beta,
+                                                  norb,
+                                                  self.gf_struct,
+                                                  qtype=(lambda x: x.stderr())))
 
         if cfg["QMC"]["offdiag"] == 0 and worm == 0:
             def bs_diagflat(bs_array):

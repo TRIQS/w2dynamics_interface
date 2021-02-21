@@ -336,10 +336,11 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, n_iw, beta, gf_struct):
     return G_iw
 
 
-def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct):
+def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct,
+                                      qtype=(lambda x: x.mean())):
     """Converts a dictionary mapping zero-padded five digits long string
     representations of compound indices to components of the
-    two-particle Green's function as ndarrays with two fermionic
+    two-particle Green's function as ndarrays in DistributedSample objects with two fermionic
     frequency indices nu, nu' and one bosonic frequency index omega in
     the order [nu, nu', omega], as produced by w2dynamics, to a Triqs
     block Green's function on a Matsubara frequency mesh with one
@@ -351,18 +352,19 @@ def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct):
     beta : inverse temperature
     norb : number of orbitals
     gf_struct : block structure of the triqs GF
+    qtype : type / statistic of quantity to extract
 
     Returns:
-    (Block2Gf, Block2Gf) : value and error of the two-particle Green's function with one bosonic and two fermionic frequencies
+    Block2Gf : requested statistic of the two-particle Green's function with one bosonic and two fermionic frequencies
 
     Author: Alexander Kowalski (2019) """
-    from pytriqs.gf import Gf, Block2Gf, MeshImFreq, MeshProduct
-    from w2dyn.auxiliaries import compoundIndex as ci
+    from triqs.gf import Gf, Block2Gf, MeshImFreq, MeshProduct
+    from w2dyn.auxiliaries import compound_index as ci
 
     # get number of positive freqs from a component of the result
     for i in range(100000):
         try:
-            arr = g4iw["g4iw-worm/{:05}".format(i)]["value"][()]
+            arr = qtype(g4iw["g4iw-worm/{:05}".format(i)])
             n4iwf, n4iwf_check, n4iwb = arr.shape
             assert(n4iwf == n4iwf_check)
             n4iwf, n4iwb = n4iwf//2, n4iwb//2 + 1
@@ -386,25 +388,17 @@ def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct):
     # with offsets keeping track of the previous block sizes for
     # constructing the right w2dynamics compound indices
     offset1 = 0
-    G4iw_value_blocks = []
-    G4iw_error_blocks = []
+    G4iw_blocks = []
     for name1, basis1 in gf_struct:
         offset2 = 0
-        value_subblocks = []
-        error_subblocks = []
-        G4iw_value_blocks.append(value_subblocks)
-        G4iw_error_blocks.append(error_subblocks)
+        subblocks = []
+        G4iw_blocks.append(subblocks)
         for name2, basis2 in gf_struct:
-            G4iw_value_block = Gf(mesh=iwmesh, target_shape=[len(basis1),
-                                                             len(basis1),
-                                                             len(basis2),
-                                                             len(basis2)])
-            value_subblocks.append(G4iw_value_block)
-            G4iw_error_block = Gf(mesh=iwmesh, target_shape=[len(basis1),
-                                                             len(basis1),
-                                                             len(basis2),
-                                                             len(basis2)])
-            error_subblocks.append(G4iw_error_block)
+            G4iw_block = Gf(mesh=iwmesh, target_shape=[len(basis1),
+                                                       len(basis1),
+                                                       len(basis2),
+                                                       len(basis2)])
+            subblocks.append(G4iw_block)
 
             for i in range(len(basis1)):
                 for j in range(len(basis1)):
@@ -422,25 +416,18 @@ def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct):
                                     np.array([offset1 + i, offset1 + j,
                                               offset2 + k, offset2 + l]) // norb)
                             try:
-                                G4iw_value_block.data[:, :, :, i, j, k, l] = beta * g4iw[(
-                                    "g4iw-worm/{:05}".format(cindex))]["value"][()].transpose(2, 0, 1)
-                                G4iw_error_block.data[:, :, :, i, j, k, l] = beta * g4iw[(
-                                    "g4iw-worm/{:05}".format(cindex))]["error"][()].transpose(2, 0, 1)
+                                G4iw_block.data[:, :, :, i, j, k, l] = beta * qtype(g4iw[(
+                                    "g4iw-worm/{:05}".format(cindex))]).transpose(2, 0, 1)
                             except KeyError:
-                                G4iw_value_block.data[:, :, :, i, j, k, l] = 0.0
-                                G4iw_error_block.data[:, :, :, i, j, k, l] = 0.0
+                                G4iw_block.data[:, :, :, i, j, k, l] = 0.0
             offset2 += len(basis2)
         offset1 += len(basis1)
 
     G4iw_triqs = Block2Gf([x[0] for x in gf_struct],
                           [x[0] for x in gf_struct],
-                          G4iw_value_blocks)
+                          G4iw_blocks)
 
-    G4iw_error_triqs = Block2Gf([x[0] for x in gf_struct],
-                                [x[0] for x in gf_struct],
-                                G4iw_error_blocks)
-
-    return G4iw_triqs, G4iw_error_triqs
+    return G4iw_triqs
 
 
 def exchange_fastest_running_index_ff(array):
