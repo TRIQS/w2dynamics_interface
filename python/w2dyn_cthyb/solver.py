@@ -89,6 +89,7 @@ class Solver():
         random_seed = params_kw.pop("random_seed", 1)
         move_double = params_kw.pop("move_double", True)
         measure_G_l = params_kw.pop("measure_G_l", True)
+        measure_G_tau = params_kw.pop("measure_G_tau", True)
         measure_pert_order = params_kw.pop("measure_pert_order", False)
         statesampling = params_kw.pop("statesampling", False)
         flavourchange_moves = params_kw.pop("flavourchange_moves", False)
@@ -212,7 +213,10 @@ TaudiffMax = -1.0""" % norb
 
         cfg["General"]["beta"] = self.beta
         cfg["QMC"]["Niw"] = self.n_iw
-        cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
+        if measure_G_tau:
+            cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
+        else:
+            cfg["QMC"]["Ntau"] = 1
         if measure_G_l:
             cfg["QMC"]["NLegMax"] = self.n_l
             cfg["QMC"]["NLegOrder"] = self.n_l
@@ -301,88 +305,89 @@ TaudiffMax = -1.0""" % norb
         ### feed impurity problem into solver
         solver.set_problem(imp_problem)
 
-        ### solve impurity problem 
+        ### solve impurity problem
         mccfgcontainer = []
         iter_no = 1
-        if self.complex:
-            solver.set_problem(imp_problem)
-            solver.umatrix = U_ijkl
-            result = solver.solve(mccfgcontainer)
-            gtau = result.other["gtau-full"]
-        else:
-            if not worm:
+        if measure_G_tau or measure_G_l or measure_pert_order:
+            if self.complex:
                 solver.set_problem(imp_problem)
                 solver.umatrix = U_ijkl
-                result = solver.solve(iter_no, mccfgcontainer)
+                result = solver.solve(mccfgcontainer)
                 gtau = result.other["gtau-full"]
             else:
+                if not worm:
+                    solver.set_problem(imp_problem)
+                    solver.umatrix = U_ijkl
+                    result = solver.solve(iter_no, mccfgcontainer)
+                    gtau = result.other["gtau-full"]
+                else:
 
-              gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+                  gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
 
-              from auxiliaries.compoundIndex import index2component_general
+                  from auxiliaries.compoundIndex import index2component_general
 
-              components = []
+                  components = []
 
-              for comp_ind in range(1,(2*norb)**2+1):
+                  for comp_ind in range(1,(2*norb)**2+1):
 
-                  tmp = index2component_general(norb, 2, int(comp_ind))
+                      tmp = index2component_general(norb, 2, int(comp_ind))
 
-                  ### check if ftau is nonzero
+                      ### check if ftau is nonzero
 
-                  bands = tmp[1]
-                  spins = tmp[2]
+                      bands = tmp[1]
+                      spins = tmp[2]
 
-                  b1 = bands[0]
-                  b2 = bands[1]
-                  s1 = spins[0]
-                  s2 = spins[1]
+                      b1 = bands[0]
+                      b2 = bands[1]
+                      s1 = spins[0]
+                      s2 = spins[1]
 
-                  all_zeros = not np.any(ftau[:,b1,s1,b2,s2]>1e-5)
+                      all_zeros = not np.any(ftau[:,b1,s1,b2,s2]>1e-5)
 
-                  if not all_zeros:
-                      components = np.append(components, comp_ind)
-
-              if mpi.rank == 0:
-                  print('worm components to measure: ', components)
-              
-              ### divide either max_time Nmeas among the nonzero components
-              if max_time <= 0:
-                  cfg["QMC"]["Nmeas"] = int(cfg["QMC"]["Nmeas"] / float(len(components)))
-              else:
-                  cfg["QMC"]["measurement_time"] = int(float(max_time) / float(len(components)))
-                      
-              for comp_ind in components:
+                      if not all_zeros:
+                          components = np.append(components, comp_ind)
 
                   if mpi.rank == 0:
-                      print('--> comp_ind', comp_ind)
+                      print('worm components to measure: ', components)
 
-                  solver.set_problem(imp_problem)
-                  solver.umatrix = U_ijkl
-                  result_aux, result = solver.solve_component(1,2,comp_ind,mccfgcontainer)
+                  ### divide either max_time Nmeas among the nonzero components
+                  if max_time <= 0:
+                      cfg["QMC"]["Nmeas"] = int(cfg["QMC"]["Nmeas"] / float(len(components)))
+                  else:
+                      cfg["QMC"]["measurement_time"] = int(float(max_time) / float(len(components)))
 
-                  for i in list(result.other.keys()):
+                  for comp_ind in components:
 
-                      if "gtau-worm" in i:
-                          gtau_name = i
+                      if mpi.rank == 0:
+                          print('--> comp_ind', comp_ind)
 
-                  tmp = index2component_general(norb, 2, int(comp_ind))
+                      solver.set_problem(imp_problem)
+                      solver.umatrix = U_ijkl
+                      result_aux, result = solver.solve_component(1,2,comp_ind,mccfgcontainer)
 
-                  ### check if ftau is nonzero
+                      for i in list(result.other.keys()):
 
-                  bands = tmp[1]
-                  spins = tmp[2]
+                          if "gtau-worm" in i:
+                              gtau_name = i
 
-                  b1 = bands[0]
-                  b2 = bands[1]
-                  s1 = spins[0]
-                  s2 = spins[1]
+                      tmp = index2component_general(norb, 2, int(comp_ind))
 
-                  # Remove axis 0 from local samples by averaging, so
-                  # no data remains unused even if there is more than
-                  # one local sample (should not happen)
-                  gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name].local,
-                                                       axis=0)
-              gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+                      ### check if ftau is nonzero
+
+                      bands = tmp[1]
+                      spins = tmp[2]
+
+                      b1 = bands[0]
+                      b2 = bands[1]
+                      s1 = spins[0]
+                      s2 = spins[1]
+
+                      # Remove axis 0 from local samples by averaging, so
+                      # no data remains unused even if there is more than
+                      # one local sample (should not happen)
+                      gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name].local,
+                                                           axis=0)
+                  gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
         if measure_g4iw_ph:
             # Set necessary configuration parameters for the solver
@@ -435,37 +440,40 @@ TaudiffMax = -1.0""" % norb
                                                   self.gf_struct,
                                                   qtype=(lambda x: x.stderr())))
 
-        if cfg["QMC"]["offdiag"] == 0 and worm == 0:
-            def bs_diagflat(bs_array):
-                """Return an array with a shape extended compared to
-                that of the argument by doubling the first two axes and
-                fill it such that the returned array is diagonal with
-                respect to both pairs (axes 1 and 3 and axes 2 and 4).
-                """
-                shape_bsonly = bs_array.shape[0:2]
-                bsbs_shape = shape_bsonly + bs_array.shape
-                bsbs_array = np.zeros(bsbs_shape, dtype=bs_array.dtype)
-                for b in range(bs_array.shape[0]):
-                    for s in range(bs_array.shape[1]):
-                        bsbs_array[b, s, b, s, ...] = bs_array[b, s, ...]
-                return bsbs_array
 
-            gtau = result.other["gtau"].apply(bs_diagflat)
+        def bs_diagflat(bs_array):
+            """Return an array with a shape extended compared to
+            that of the argument by doubling the first two axes and
+            fill it such that the returned array is diagonal with
+            respect to both pairs (axes 1 and 3 and axes 2 and 4).
+            """
+            shape_bsonly = bs_array.shape[0:2]
+            bsbs_shape = shape_bsonly + bs_array.shape
+            bsbs_array = np.zeros(bsbs_shape, dtype=bs_array.dtype)
+            for b in range(bs_array.shape[0]):
+                for s in range(bs_array.shape[1]):
+                    bsbs_array[b, s, b, s, ...] = bs_array[b, s, ...]
+            return bsbs_array
+
 
         ### here comes the function for conversion w2dyn --> triqs
-        self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
-            gtau, self.beta, self.gf_struct)
+        if measure_G_tau:
+            if cfg["QMC"]["offdiag"] == 0 and worm == 0:
+                gtau = result.other["gtau"].apply(bs_diagflat)
 
-        self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
+            self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
+                gtau, self.beta, self.gf_struct)
 
-        ### I will use the FFT from triqs here...
-        for name, g in self.G_tau:
-            bl_size = g.target_shape[0]
-            known_moments = np.zeros((4, bl_size, bl_size), dtype=np.complex)
-            for i in range(bl_size):
-                known_moments[1,i,i] = 1
+            self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
 
-            self.G_iw[name].set_from_fourier(g, known_moments)
+            ### I will use the FFT from triqs here...
+            for name, g in self.G_tau:
+                bl_size = g.target_shape[0]
+                known_moments = np.zeros((4, bl_size, bl_size), dtype=np.complex)
+                for i in range(bl_size):
+                    known_moments[1,i,i] = 1
+
+                self.G_iw[name].set_from_fourier(g, known_moments)
 
         ### add perturbation order as observable
         #print 'measure_pert_order ', measure_pert_order 
