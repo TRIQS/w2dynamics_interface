@@ -402,6 +402,7 @@ TaudiffMax = -1.0""" % norb
             # it to the requested blocks (measure_G2_blocks solve
             # parameter) and the nonzero elements for the given
             # interaction (if easily determinable)
+            mccfgcontainer = []
             for icomponent in range(1,(2*norb)**4+1):
 
                 if mpi.rank == 0:

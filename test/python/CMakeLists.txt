@@ -5,7 +5,7 @@ foreach(file ${all_h5_ref_files})
 endforeach()
 
 # List of all tests
-set(all_tests exctractor_test SIAM_Discrete_Bath 2orb_Discrete_Bath)
+set(all_tests exctractor_test SIAM_Discrete_Bath 2orb_Discrete_Bath 2orb_Discrete_Bath_2pGF)
 
 try_compile(USE_LIBCXX ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/check_libcxx.cpp)
 foreach(test ${all_tests})
