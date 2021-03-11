@@ -76,6 +76,7 @@ class Solver():
         worm = params_kw.pop("worm", False)
         percentageworminsert = params_kw.pop("PercentageWormInsert", 0.20)
         percentagewormreplace = params_kw.pop("PercentageWormReplace", 0.20)
+        wormcomponents = params_kw.pop("worm_components", None)
 
         length_cycle = params_kw.pop("length_cycle", 50)
         h_int = params_kw.pop("h_int")
@@ -408,7 +409,9 @@ TaudiffMax = -1.0""" % norb
             # parameter) and the nonzero elements for the given
             # interaction (if easily determinable)
             mccfgcontainer = []
-            for icomponent in range(1,(2*norb)**4+1):
+            for icomponent in (wormcomponents
+                               if wormcomponents is not None
+                               else range(1, (2*norb)**4+1)):
 
                 if mpi.rank == 0:
                     print('Sampling worm component {}'.format(icomponent))

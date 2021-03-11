@@ -112,6 +112,8 @@ solve_params = {
     'measure_G2_iw_ph': True,
     'measure_G2_n_fermionic': 5,
     'measure_G2_n_bosonic': 5,
+    # check only some components, both ones expected to be zero and nonzero
+    'worm_components': [1, 2, 6, 11, 16, 21, 31, 35, 40, 41, 46, 55, 61]
 }
 S.solve(**solve_params)
 
