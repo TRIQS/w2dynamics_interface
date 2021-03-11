@@ -325,7 +325,7 @@ TaudiffMax = -1.0""" % norb
 
                   gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
 
-                  from auxiliaries.compoundIndex import index2component_general
+                  from w2dyn.auxiliaries.compound_index import index2component_general
 
                   components = []
 
