@@ -63,6 +63,10 @@ jobs:
         brew install gcc@10 llvm boost fftw hdf5 open-mpi openblas
         pip3 install mako numpy scipy mpi4py
         pip3 install -r requirements.txt
+        echo "LD_LIBRARY_PATH=$(brew --prefix)/opt/openblas/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$(brew --prefix)/opt/openblas/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "BLAS_ROOT=$(brew --prefix)/opt/openblas" >> $GITHUB_ENV
+        echo "LAPACK_ROOT=$(brew --prefix)/opt/openblas" >> $GITHUB_ENV
 
     - name: Build & Install TRIQS
       env:

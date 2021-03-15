@@ -76,15 +76,18 @@ for (int i = 0; i < osxPlatforms.size(); i++) {
       checkout scm
 
       def hdf5 = "${env.BREW}/opt/hdf5@1.10"
+      def openblas = "${env.BREW}/opt/openblas"
       dir(buildDir) { withEnv(platformEnv[1].collect { it.replace('\$BREW', env.BREW) } + [
-	  "PATH=$venv/bin:${env.BREW}/bin:/usr/bin:/bin:/usr/sbin",
-	  "HDF5_ROOT=$hdf5",
-          "C_INCLUDE_PATH=$hdf5/include:${env.BREW}/include",
-	  "CPLUS_INCLUDE_PATH=$venv/include:$hdf5/include:${env.BREW}/include",
-	  "LIBRARY_PATH=$venv/lib:$hdf5/lib:${env.BREW}/lib",
-          "LD_LIBRARY_PATH=$hdf5/lib",
+          "PATH=$venv/bin:${env.BREW}/bin:/usr/bin:/bin:/usr/sbin",
+          "HDF5_ROOT=$hdf5",
+          "C_INCLUDE_PATH=$hdf5/include:$openblas/include:${env.BREW}/include",
+          "CPLUS_INCLUDE_PATH=$venv/include:$hdf5/include:$openblas/include:${env.BREW}/include",
+          "LIBRARY_PATH=$venv/lib:$hdf5/lib:$openblas/lib:${env.BREW}/lib",
+          "LD_LIBRARY_PATH=$hdf5/lib:$openblas/lib",
           "PYTHONPATH=$installDir/lib/python3.9/site-packages",
-	  "CMAKE_PREFIX_PATH=$venv/lib/cmake/triqs",
+          "CMAKE_PREFIX_PATH=$venv/lib/cmake/triqs",
+          "BLAS_ROOT=$openblas",
+          "LAPACK_ROOT=$openblas",
           "NPY_DISTUTILS_APPEND_FLAGS=1"]) {
         deleteDir()
         /* note: this is installing into the parent (triqs) venv (install dir), which is thus shared among apps and so not be completely safe */
