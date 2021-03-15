@@ -73,7 +73,7 @@ message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
 
 # --- Define the w2dynamics interface version numbers and get the git hash
-set(W2DYN_GIT_HASH 7367f9dcb7962ba53994b7c87d237355ae6c6c4f)
+set(W2DYN_GIT_HASH d6e2d392af54fd28404d667644bd36790bc5ff25)
 message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
 
 # --- Build w2dynamics as an external project
@@ -82,7 +82,7 @@ get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES
 include(ExternalProject)
 ExternalProject_Add(w2dynamics
   PREFIX w2dyn_project
-  GIT_REPOSITORY https://github.com/wentzell/w2dynamics
+  GIT_REPOSITORY https://github.com/w2dynamics/w2dynamics
   GIT_TAG ${W2DYN_GIT_HASH}
   GIT_CONFIG advice.detachedHead=false
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
@@ -92,6 +92,7 @@ ExternalProject_Add(w2dynamics
              -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
              -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
   INSTALL_COMMAND ""
+  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
 )
 
 set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dynamics)
