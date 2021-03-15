@@ -92,7 +92,7 @@ ExternalProject_Add(w2dynamics
              -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
              -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
   INSTALL_COMMAND ""
-  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
+  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} checkout . && ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
 )
 
 set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dynamics)
