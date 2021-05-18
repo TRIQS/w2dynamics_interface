@@ -10,9 +10,11 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import triqs.utility.mpi as mpi
+
 from triqs.gf import Fourier
 from triqs.gf import MeshImTime, MeshImFreq, BlockGf
 from triqs.gf.tools import conjugate
+from triqs.gf.block_gf import fix_gf_struct_type
 from triqs.operators.util.extractors import *
 
 import w2dyn.auxiliaries.CTQMC
@@ -43,7 +45,7 @@ class Solver():
                 "n_tau": n_tau, "n_l": n_l, "delta_interface": delta_interface }
 
         self.beta = beta
-        self.gf_struct= gf_struct
+        self.gf_struct = fix_gf_struct_type(gf_struct)
         self.n_iw = n_iw
         self.n_tau = n_tau
         self.n_l = n_l
@@ -56,7 +58,7 @@ class Solver():
         if self.delta_interface:
             self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
         else:
-            self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=gf_struct)
+            self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
 
     def solve(self, **params_kw):
         """Solve impurity model 
@@ -98,10 +100,6 @@ class Solver():
         measure_g4iw_ph = params_kw.pop("measure_G2_iw_ph", False)
         n4iwf = params_kw.pop("measure_G2_n_fermionic", 30)
         n4iwb = params_kw.pop("measure_G2_n_bosonic", 30) - 1
-
-        if isinstance(self.gf_struct,dict):
-            print("WARNING: gf_struct should be a list of pairs [ [str,[int,...]], ...], not a dict")
-            self.gf_struct = [ [k, v] for k, v in self.gf_struct.items() ]
 
         ### Andi: the definition in the U-Matrix in w2dyn is
         ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k
@@ -262,7 +260,8 @@ TaudiffMax = -1.0""" % norb
         ### initialize the solver; it needs the config-string
         Nseed = random_seed + mpi.rank
         use_mpi = False
-        mpi_comm = mpi.world
+        import mpi4py
+        mpi_comm = mpi4py.MPI.COMM_WORLD
         solver = impurity.CtHybSolver(cfg, Nseed, 0,0,0, False, mpi_comm)
 
         ### generate dummy input that we don't necessarily need

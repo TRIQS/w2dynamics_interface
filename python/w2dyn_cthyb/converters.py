@@ -13,11 +13,8 @@ def get_test_impurity_model(norb=2, ntau=1000, beta=10.0):
     from pyed.OperatorUtils import get_quadratic_operator
     from pyed.OperatorUtils import operator_from_quartic_tensor
     
-    orb_idxs = list(np.arange(norb))
-    #print "orb_idxs ", orb_idxs 
     spin_idxs = ['up', 'do']
-    gf_struct = [ [spin_idx, orb_idxs] for spin_idx in spin_idxs ]
-    #print "gf_struct", gf_struct
+    gf_struct = [ [spin_idx, norb] for spin_idx in spin_idxs ]
 
     # -- Random Hamiltonian
     
@@ -389,21 +386,21 @@ def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct,
     # constructing the right w2dynamics compound indices
     offset1 = 0
     G4iw_blocks = []
-    for name1, basis1 in gf_struct:
+    for name1, size1 in gf_struct:
         offset2 = 0
         subblocks = []
         G4iw_blocks.append(subblocks)
-        for name2, basis2 in gf_struct:
-            G4iw_block = Gf(mesh=iwmesh, target_shape=[len(basis1),
-                                                       len(basis1),
-                                                       len(basis2),
-                                                       len(basis2)])
+        for name2, size2 in gf_struct:
+            G4iw_block = Gf(mesh=iwmesh, target_shape=[size1,
+                                                       size1,
+                                                       size2,
+                                                       size2])
             subblocks.append(G4iw_block)
 
-            for i in range(len(basis1)):
-                for j in range(len(basis1)):
-                    for k in range(len(basis2)):
-                        for l in range(len(basis2)):
+            for i in range(size1):
+                for j in range(size1):
+                    for k in range(size2):
+                        for l in range(size2):
                             # we assume that spin is desired to be the
                             # slowest changing index in the triqs
                             # block structure, so we get orbital
@@ -420,8 +417,8 @@ def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct,
                                     "g4iw-worm/{:05}".format(cindex))]).transpose(2, 0, 1)
                             except KeyError:
                                 G4iw_block.data[:, :, :, i, j, k, l] = 0.0
-            offset2 += len(basis2)
-        offset1 += len(basis1)
+            offset2 += size2
+        offset1 += size1
 
     G4iw_triqs = Block2Gf([x[0] for x in gf_struct],
                           [x[0] for x in gf_struct],

@@ -75,7 +75,7 @@ h_coup = sum((c_dag_vec[s] * c_bath_vec[s]
 h_imp = h_loc + h_coup + h_bath
 
 # ==== Green function structure ====
-gf_struct = [[so, [0]] for so in so_names]
+gf_struct = [[so, 1] for so in so_names]
 
 # ==== Hybridization Function ====
 n_iw = int(10 * beta)
