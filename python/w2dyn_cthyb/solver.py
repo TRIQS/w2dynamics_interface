@@ -20,6 +20,9 @@ import w2dyn.dmft.impurity as impurity
 import w2dyn.auxiliaries.config as config
 import w2dyn.auxiliaries.statistics as stat
 
+from w2dyn.dmft.worm import get_sector_index as worm_get_sector_index
+from w2dyn.auxiliaries import hdfout
+
 from .converters import NO_to_Nos
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
@@ -209,6 +212,7 @@ TaudiffMax = -1.0""" % norb
         cfg["General"]["beta"] = self.beta
         cfg["QMC"]["Niw"] = self.n_iw
         cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
+
         if measure_G_l:
             cfg["QMC"]["NLegMax"] = self.n_l
             cfg["QMC"]["NLegOrder"] = self.n_l
@@ -226,7 +230,8 @@ TaudiffMax = -1.0""" % norb
         else:
             cfg["QMC"]["statesampling"] = 0
 
-        if worm:
+        #if worm:
+        if False:
             cfg["QMC"]["WormMeasGiw"] = 1
             cfg["QMC"]["WormMeasGtau"] = 1
             cfg["QMC"]["WormSearchEta"] = 1
@@ -250,11 +255,17 @@ TaudiffMax = -1.0""" % norb
             print('cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"])
 
         ### Manually supplied cfg paramters
-        manual_cfg = params_kw.pop("cfg", {})
-        for key, value in manual_cfg.items():
-            if mpi.rank == 0: print(f'cfg[{key}] = {value}')
-            header, key = key
-            cfg[header][key] = value
+        manual_cfg_qmc = params_kw.pop("cfg_qmc", {})
+        for key, value in manual_cfg_qmc.items():
+            cfg["QMC"][key] = value
+            if mpi.rank == 0: print(f'cfg["QMC"][{key}] = {value}')
+
+        if mpi.rank == 0:
+            for header, section in cfg.items():
+                print('='*72)
+                print(f'[[{header}]]')
+                for key, value in section.items():
+                    print(f'cfg[{header}][{key}] = {value}')
             
         ### initialize the solver; it needs the config-string
         Nseed = random_seed + mpi.rank
@@ -317,11 +328,12 @@ TaudiffMax = -1.0""" % norb
                 solver.umatrix = U_ijkl
                 result = solver.solve(iter_no, mccfgcontainer)
                 gtau = result.other["gtau-full"]
-            else:
 
+            elif worm_get_sector_index(cfg['QMC']) == 2:
+              
               gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
 
-              from auxiliaries.compoundIndex import index2component_general
+              from w2dyn.auxiliaries.compound_index import index2component_general
 
               components = []
 
@@ -360,10 +372,9 @@ TaudiffMax = -1.0""" % norb
 
                   solver.set_problem(imp_problem)
                   solver.umatrix = U_ijkl
-                  result_aux, result = solver.solve_component(1,2,comp_ind,mccfgcontainer)
+                  result_aux, result = solver.solve_comp_stats(1, 2, comp_ind, mccfgcontainer)
 
                   for i in list(result.other.keys()):
-
                       if "gtau-worm" in i:
                           gtau_name = i
 
@@ -382,9 +393,45 @@ TaudiffMax = -1.0""" % norb
                   # Remove axis 0 from local samples by averaging, so
                   # no data remains unused even if there is more than
                   # one local sample (should not happen)
-                  gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name].local,
-                                                       axis=0)
+                  gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name].local, axis=0)
+                  
               gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+
+            else: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
+
+                # Not used but has to be created..
+                gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+
+                cfg['General']['FileNamePrefix'] = 'data_worm'
+                output = hdfout.HdfOutput(cfg, "1337DEADBEEF", mpi_comm=mpi_comm)
+
+                iimp = 0
+                iter_no = 0
+                iter_type = 'worm'
+                
+                if mpi.rank == 0: output.open_iteration(iter_type, iter_no)
+
+                worm_sector = worm_get_sector_index(cfg['QMC'])
+
+                components = [int(s) for s in cfg["QMC"]["WormComponents"] if int(s)>0]
+                
+                for component in components:
+                    if mpi.rank == 0:
+                        print('='*72)
+                        print('='*72)
+                        print(f'worm sampling four point component: {component}')
+                        print('='*72)
+                        print('='*72)
+
+                    solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
+                    solver.umatrix = U_ijkl
+                    result_gen, result_comp = \
+                        solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
+
+                    output.write_impurity_result(iimp, result_comp.other)
+                    output.write_impurity_result(iimp, result_gen.other)
+                    
 
         if cfg["QMC"]["offdiag"] == 0 and worm == 0:
             def bs_diagflat(bs_array):
