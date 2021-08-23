@@ -249,7 +249,13 @@ TaudiffMax = -1.0""" % norb
             print('cfg["QMC"]["flavourchange_moves"] ',  cfg["QMC"]["flavourchange_moves"])
             print('cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"])
 
-
+        ### Manually supplied cfg paramters
+        manual_cfg = params_kw.pop("cfg", {})
+        for key, value in manual_cfg.items():
+            if mpi.rank == 0: print(f'cfg[{key}] = {value}')
+            header, key = key
+            cfg[header][key] = value
+            
         ### initialize the solver; it needs the config-string
         Nseed = random_seed + mpi.rank
         use_mpi = False
