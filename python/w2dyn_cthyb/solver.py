@@ -22,6 +22,9 @@ import w2dyn.dmft.impurity as impurity
 import w2dyn.auxiliaries.config as config
 import w2dyn.auxiliaries.statistics as stat
 
+from w2dyn.dmft.worm import get_sector_index as worm_get_sector_index
+from w2dyn.auxiliaries import hdfout
+
 from .converters import NO_to_Nos
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
@@ -212,10 +215,8 @@ TaudiffMax = -1.0""" % norb
 
         cfg["General"]["beta"] = self.beta
         cfg["QMC"]["Niw"] = self.n_iw
-        if measure_G_tau:
-            cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
-        else:
-            cfg["QMC"]["Ntau"] = 1
+        cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
+
         if measure_G_l:
             cfg["QMC"]["NLegMax"] = self.n_l
             cfg["QMC"]["NLegOrder"] = self.n_l
@@ -233,7 +234,8 @@ TaudiffMax = -1.0""" % norb
         else:
             cfg["QMC"]["statesampling"] = 0
 
-        if worm:
+        #if worm:
+        if False:
             cfg["QMC"]["WormMeasGiw"] = 1
             cfg["QMC"]["WormMeasGtau"] = 1
             cfg["QMC"]["WormSearchEta"] = 1
@@ -257,11 +259,17 @@ TaudiffMax = -1.0""" % norb
             print('cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"])
 
         ### Manually supplied cfg paramters
-        manual_cfg = params_kw.pop("cfg", {})
-        for key, value in manual_cfg.items():
-            if mpi.rank == 0: print(f'cfg[{key}] = {value}')
-            header, key = key
-            cfg[header][key] = value
+        manual_cfg_qmc = params_kw.pop("cfg_qmc", {})
+        for key, value in manual_cfg_qmc.items():
+            cfg["QMC"][key] = value
+            if mpi.rank == 0: print(f'cfg["QMC"][{key}] = {value}')
+
+        if mpi.rank == 0:
+            for header, section in cfg.items():
+                print('='*72)
+                print(f'[[{header}]]')
+                for key, value in section.items():
+                    print(f'cfg[{header}][{key}] = {value}')
             
         ### initialize the solver; it needs the config-string
         Nseed = random_seed + mpi.rank
@@ -315,22 +323,24 @@ TaudiffMax = -1.0""" % norb
         mccfgcontainer = []
         iter_no = 1
         if measure_G_tau or measure_G_l or measure_pert_order:
+
             if self.complex:
                 solver.set_problem(imp_problem)
                 solver.umatrix = U_ijkl
                 result = solver.solve(mccfgcontainer)
                 gtau = result.other["gtau-full"]
-            else:
-                if not worm:
-                    solver.set_problem(imp_problem)
-                    solver.umatrix = U_ijkl
-                    result = solver.solve(iter_no, mccfgcontainer)
-                    gtau = result.other["gtau-full"]
-                else:
 
-                  gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+            elif no worm:
+                solver.set_problem(imp_problem)
+                solver.umatrix = U_ijkl
+                result = solver.solve(iter_no, mccfgcontainer)
+                gtau = result.other["gtau-full"]
+                
+            elif worm_get_sector_index(cfg['QMC']) == 2:
+              
+              gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
 
-                  from w2dyn.auxiliaries.compound_index import index2component_general
+              from w2dyn.auxiliaries.compound_index import index2component_general
 
                   components = []
 
@@ -395,58 +405,41 @@ TaudiffMax = -1.0""" % norb
                                                            axis=0)
                   gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
-        if measure_g4iw_ph:
-            # Set necessary configuration parameters for the solver
-            # and construct a new one so the Fortran module also gets
-            # them (config is currently passed in the constructor)
-            cfg["QMC"]["FourPnt"] = 8
-            cfg["QMC"]["N4iwf"] = n4iwf
-            cfg["QMC"]["N4iwb"] = n4iwb
-            cfg["QMC"]["PercentageWormInsert"] = percentageworminsert
-            cfg["QMC"]["PercentageWormReplace"] = percentagewormreplace
-            cfg["QMC"]["WormMeasG4iw"] = 1
-            cfg["QMC"]["WormSearchEta"] = 1
-            solver = impurity.CtHybSolver(cfg, Nseed, 0,0,0, False, mpi_comm)
+            else: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
-            g4iw = dict()
-            # the number of components could be reduced by restricting
-            # it to the requested blocks (measure_G2_blocks solve
-            # parameter) and the nonzero elements for the given
-            # interaction (if easily determinable)
-            mccfgcontainer = []
-            for icomponent in (wormcomponents
-                               if wormcomponents is not None
-                               else range(1, (2*norb)**4+1)):
+                # Not used but has to be created..
+                gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
-                if mpi.rank == 0:
-                    print('Sampling worm component {}'.format(icomponent))
+                cfg['General']['FileNamePrefix'] = 'data_worm'
+                output = hdfout.HdfOutput(cfg, "1337DEADBEEF", mpi_comm=mpi_comm)
 
-                solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
-                solver.umatrix = U_ijkl
-                res_gen, res_g4comp = solver.solve_comp_stats(1, 4,
-                                                              icomponent,
-                                                              mccfgcontainer)
+                iimp = 0
+                iter_no = 0
+                iter_type = 'worm'
+                
+                if mpi.rank == 0: output.open_iteration(iter_type, iter_no)
 
-                # Collect components into right format for the
-                # conversion function:
-                # g4iw["g4iw-worm/{:05}".format(compound_index)]["value"]
-                # should give the value of the component specified by
-                # compound_index and replacing "value" by "error" the
-                # error
-                for i in res_g4comp.other.keys():
-                    if "g4iw-worm" in i:
-                        g4iw[i] = res_g4comp.other[i]
+                worm_sector = worm_get_sector_index(cfg['QMC'])
 
-            self.G2_iw_ph = w2dyn_g4iw_worm_to_triqs_block2gf(g4iw,
-                                                              self.beta,
-                                                              norb,
-                                                              self.gf_struct)
-            self.G2_iw_ph_error = (
-                w2dyn_g4iw_worm_to_triqs_block2gf(g4iw,
-                                                  self.beta,
-                                                  norb,
-                                                  self.gf_struct,
-                                                  qtype=(lambda x: x.stderr())))
+                components = [int(s) for s in cfg["QMC"]["WormComponents"] if int(s)>0]
+                
+                for component in components:
+                    if mpi.rank == 0:
+                        print('='*72)
+                        print('='*72)
+                        print(f'worm sampling four point component: {component}')
+                        print('='*72)
+                        print('='*72)
+
+                    solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
+                    solver.umatrix = U_ijkl
+                    result_gen, result_comp = \
+                        solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
+
+                    output.write_impurity_result(iimp, result_comp.other)
+                    output.write_impurity_result(iimp, result_gen.other)
+                    
 
 
         def bs_diagflat(bs_array):
@@ -462,6 +455,7 @@ TaudiffMax = -1.0""" % norb
                 for s in range(bs_array.shape[1]):
                     bsbs_array[b, s, b, s, ...] = bs_array[b, s, ...]
             return bsbs_array
+
 
 
         ### here comes the function for conversion w2dyn --> triqs
