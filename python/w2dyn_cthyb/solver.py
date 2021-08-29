@@ -117,7 +117,8 @@ class Solver():
         U_ijkl = U_ijkl.reshape(2,norb, 2,norb, 2,norb, 2,norb)
         U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
         U_ijkl = U_ijkl.reshape(norb*2, norb*2, norb*2, norb*2)
-
+        self.norb = norb
+        
         if self.delta_interface:
             t_ij_matrix = dict_to_matrix(extract_h_dict(h_0), self.gf_struct)
         else:
@@ -426,8 +427,25 @@ TaudiffMax = -1.0""" % norb
                 iter_no = 0
                 iter_type = 'worm'
                 worm_sector = worm_get_sector_index(cfg['QMC'])
-                components = [int(s) for s in cfg["QMC"]["WormComponents"] if int(s)>0]
-                
+
+                components = []
+
+                for c in cfg["QMC"]["WormComponents"]:
+                    if type(c) == int:
+                        if c > 0:
+                            components.append(c)
+                    else:
+                        # -- Translate band-spin component to linear index
+                        c = np.array(c, copy=True, ndmin=1, dtype=int)
+                        noper = 4
+                        from w2dyn.auxiliaries.compound_index import componentBS2index_general
+                        idx = componentBS2index_general(norb, noper, c)
+                        components.append(idx)
+
+                if mpi.rank == 0:
+                    print(f'WormComponents = {cfg["QMC"]["WormComponents"]}')
+                    print(f'WormComponentIndices = {components}')
+                                    
                 for component in components:
                     if mpi.rank == 0:
                         print('='*72)
