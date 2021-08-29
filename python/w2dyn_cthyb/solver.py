@@ -399,21 +399,25 @@ TaudiffMax = -1.0""" % norb
 
             else: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
+                # -- Two-particle response-function worm sampling
+
+                from triqs.gf import MeshImFreq, MeshProduct, Gf
+                fmesh = MeshImFreq(beta=self.beta, S="Fermion", n_max=cfg["QMC"]["N4iwf"])
+                bmesh = MeshImFreq(beta=self.beta, S="Boson", n_max=cfg["QMC"]["N4iwb"]+1)
+                mesh = MeshProduct(fmesh, fmesh, bmesh)
+                g4iw_shape = (1, len(fmesh), len(fmesh), len(bmesh))
+                
+                self.G2_worm_components = []
+
                 # Not used but has to be created..
                 gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
                 gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
-
-                cfg['General']['FileNamePrefix'] = 'data_worm'
-                output = hdfout.HdfOutput(cfg, "1337DEADBEEF", mpi_comm=mpi_comm)
-
+                
+                # Required variables for the w2dynamics DMFT interface
                 iimp = 0
                 iter_no = 0
                 iter_type = 'worm'
-                
-                if mpi.rank == 0: output.open_iteration(iter_type, iter_no)
-
                 worm_sector = worm_get_sector_index(cfg['QMC'])
-
                 components = [int(s) for s in cfg["QMC"]["WormComponents"] if int(s)>0]
                 
                 for component in components:
@@ -429,8 +433,21 @@ TaudiffMax = -1.0""" % norb
                     result_gen, result_comp = \
                         solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
 
-                    output.write_impurity_result(iimp, result_comp.other)
-                    output.write_impurity_result(iimp, result_gen.other)
+                    g4iw_keys = [ key for key in result_comp.other.keys() if 'g4iw-worm' in key ]
+                    assert(len(g4iw_keys) == 1)
+                    g4iw_key = g4iw_keys[0]
+
+                    g4iw = np.empty(g4iw_shape, dtype=complex)
+                    g4iw[0, :] = np.mean(result_comp.other[g4iw_key].local, axis=0)
+                    g4iw = stat.DistributedSample(g4iw, mpi_comm, ntotal=mpi.size)
+
+                    G2_mean = Gf(mesh=mesh, target_shape=[])
+                    G2_mean.data[:] = g4iw.mean()
+
+                    G2_err = Gf(mesh=mesh, target_shape=[])
+                    G2_err.data[:] = g4iw.stderr()
+                    
+                    self.G2_worm_components.append((component, G2_mean, G2_err))
                     
 
         if cfg["QMC"]["offdiag"] == 0 and worm == 0:
