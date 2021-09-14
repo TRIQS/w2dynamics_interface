@@ -331,7 +331,8 @@ TaudiffMax = -1.0""" % norb
                 result = solver.solve(mccfgcontainer)
                 gtau = result.other["gtau-full"]
 
-            elif no worm:
+            elif not worm:
+                
                 solver.set_problem(imp_problem)
                 solver.umatrix = U_ijkl
                 result = solver.solve(iter_no, mccfgcontainer)
@@ -406,7 +407,7 @@ TaudiffMax = -1.0""" % norb
                                                            axis=0)
                   gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
-            else: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
+            elif cfg["QMC"]["FourPnt"] == 8: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
                 # -- Two-particle response-function worm sampling
 
@@ -474,6 +475,83 @@ TaudiffMax = -1.0""" % norb
                     G2_err.data[:] = g4iw.stderr()
                     
                     self.G2_worm_components.append((component, G2_mean, G2_err))
+
+            elif cfg["QMC"]["WormMeasP3iwPH"] == 1:
+
+                print(f"worm sector index = {worm_get_sector_index(cfg['QMC'])}")            
+                print('--> WormMeasP3iwPH')
+
+                # -- Two-particle response-function with two frequencies worm sampling
+
+                from triqs.gf import MeshImFreq, MeshProduct, Gf
+                fmesh = MeshImFreq(beta=self.beta, S="Fermion", n_max=cfg["QMC"]["N3iwf"])
+                bmesh = MeshImFreq(beta=self.beta, S="Boson", n_max=cfg["QMC"]["N3iwb"]+1)
+                mesh = MeshProduct(fmesh, bmesh)
+                gf_shape = (1, len(fmesh), len(bmesh))
+                
+                self.GF_worm_components = []
+
+                # Not used but has to be created..
+                gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+                
+                # Required variables for the w2dynamics DMFT interface
+                iimp = 0
+                iter_no = 0
+                iter_type = 'worm'
+                worm_sector = worm_get_sector_index(cfg['QMC'])
+
+                components = []
+
+                for c in cfg["QMC"]["WormComponents"]:
+                    if type(c) == int:
+                        if c > 0:
+                            components.append(c)
+                    else:
+                        # -- Translate band-spin component to linear index
+                        c = np.array(c, copy=True, ndmin=1, dtype=int)
+                        noper = 4
+                        from w2dyn.auxiliaries.compound_index import componentBS2index_general
+                        idx = componentBS2index_general(norb, noper, c)
+                        components.append(idx)
+
+                if mpi.rank == 0:
+                    print(f'WormComponents = {cfg["QMC"]["WormComponents"]}')
+                    print(f'WormComponentIndices = {components}')
+                                    
+                for component in components:
+                    if mpi.rank == 0:
+                        print('='*72)
+                        print('='*72)
+                        print(f'worm sampling four point component: {component}')
+                        print('='*72)
+                        print('='*72)
+
+                    #solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
+                    solver.set_problem(imp_problem)
+                    
+                    solver.umatrix = U_ijkl
+                    result_gen, result_comp = \
+                        solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
+                    
+                    keys = [ key for key in result_comp.other.keys() if 'p3iw-worm' in key ]
+                    assert(len(keys) == 1)
+                    key = keys[0]
+
+                    gf = np.empty(gf_shape, dtype=complex)
+                    gf[0, :] = np.mean(result_comp.other[key].local, axis=0)
+                    gf = stat.DistributedSample(gf, mpi_comm, ntotal=mpi.size)
+
+                    gf_mean = Gf(mesh=mesh, target_shape=[])
+                    gf_mean.data[:] = gf.mean()
+
+                    gf_err = Gf(mesh=mesh, target_shape=[])
+                    gf_err.data[:] = gf.stderr()
+                    
+                    self.GF_worm_components.append((component, gf_mean, gf_err))
+
+            else:
+                raise NotImplementedError
                     
 
 
