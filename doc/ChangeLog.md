@@ -1,5 +1,8 @@
-Version 3.0.0
-=============
+(changelog)=
+
+# Changelog
+
+## Version 3.0.0
 
 w2dynamics_interface version 3.0.0 is a compatibility
 release for TRIQS version 3.0.0 that
@@ -52,8 +55,7 @@ jenkins,py3
 Contributors: Philipp Dumitrescu, Alexander Kowalski, Dylan Simon, Nils Wentzell
 
 
-Version 2.2.0
-=============
+## Version 2.2.0
 
 This is the initial release of w2dynamics_interface,
 a lightweight interface to the w2dynamics cthyb code.
