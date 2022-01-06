@@ -468,18 +468,28 @@ TaudiffMax = -1.0""" % norb
                     
                     self.G2_worm_components.append((component, G2_mean, G2_err))
 
-            elif cfg["QMC"]["WormMeasP3iwPH"] == 1:
+            elif cfg["QMC"]["WormMeasP3iwPH"] == 1 or cfg["QMC"]["WormMeasP2iwPH"] == 1:
 
                 print(f"worm sector index = {worm_get_sector_index(cfg['QMC'])}")            
-                print('--> WormMeasP3iwPH')
+                print('--> WormMeasP3iwPH / WormMeasP2iwPH')
 
                 # -- Two-particle response-function with two frequencies worm sampling
 
                 from triqs.gf import MeshImFreq, MeshProduct, Gf
-                fmesh = MeshImFreq(beta=self.beta, S="Fermion", n_max=cfg["QMC"]["N3iwf"])
-                bmesh = MeshImFreq(beta=self.beta, S="Boson", n_max=cfg["QMC"]["N3iwb"]+1)
-                mesh = MeshProduct(fmesh, bmesh)
-                gf_shape = (1, len(fmesh), len(bmesh))
+
+                if cfg["QMC"]["WormMeasP3iwPH"] == 1:
+                    fmesh = MeshImFreq(beta=self.beta, S="Fermion", n_max=cfg["QMC"]["N3iwf"])
+                    bmesh = MeshImFreq(beta=self.beta, S="Boson", n_max=cfg["QMC"]["N3iwb"]+1)
+                    mesh = MeshProduct(fmesh, bmesh)
+                    gf_shape = (1, len(fmesh), len(bmesh))
+                    result_key = 'p3iw-worm'
+                elif cfg["QMC"]["WormMeasP2iwPH"] == 1:
+                    bmesh = MeshImFreq(beta=self.beta, S="Boson", n_max=cfg["QMC"]["N2iwb"]+1)
+                    mesh = bmesh
+                    gf_shape = (1, len(bmesh))
+                    result_key = 'p2iw-worm'
+                else:
+                    raise NotImplementedError
                 
                 self.GF_worm_components = []
 
@@ -526,7 +536,7 @@ TaudiffMax = -1.0""" % norb
                     result_gen, result_comp = \
                         solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
                     
-                    keys = [ key for key in result_comp.other.keys() if 'p3iw-worm' in key ]
+                    keys = [ key for key in result_comp.other.keys() if result_key in key ]
                     assert(len(keys) == 1)
                     key = keys[0]
 
