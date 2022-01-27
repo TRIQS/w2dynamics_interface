@@ -25,7 +25,7 @@ def platforms = [:]
 
 /****************** linux builds (in docker) */
 /* Each platform must have a cooresponding Dockerfile.PLATFORM in triqs/packaging */
-def dockerPlatforms = ["ubuntu-clang", "ubuntu-gcc", "centos-gcc"]
+def dockerPlatforms = ["ubuntu-clang", "ubuntu-gcc"]
 /* .each is currently broken in jenkins */
 for (int i = 0; i < dockerPlatforms.size(); i++) {
   def platform = dockerPlatforms[i]
@@ -54,7 +54,7 @@ for (int i = 0; i < dockerPlatforms.size(); i++) {
 /****************** osx builds (on host) */
 def osxPlatforms = [
   ["gcc", ['CC=gcc-11', 'CXX=g++-11', 'FC=gfortran-11']],
-  /* ["clang", ['CC=$BREW/opt/llvm/bin/clang', 'CXX=$BREW/opt/llvm/bin/clang++', 'FC=gfortran-11', 'CXXFLAGS=-I$BREW/opt/llvm/include', 'LDFLAGS=-L$BREW/opt/llvm/lib']] disabled as libcxx leads to test failures due to different random number sequences */
+  ["clang", ['CC=$BREW/opt/llvm/bin/clang', 'CXX=$BREW/opt/llvm/bin/clang++', 'FC=gfortran-11', 'CXXFLAGS=-I$BREW/opt/llvm/include', 'LDFLAGS=-L$BREW/opt/llvm/lib']]
 ]
 for (int i = 0; i < osxPlatforms.size(); i++) {
   def platformEnv = osxPlatforms[i]

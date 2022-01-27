@@ -15,7 +15,7 @@ norb = 5
 
 ### generate block structure
 spin_names = ['up', 'dn']
-orb_names  = [ i for i in range(0,norb)]
+orb_names  = [ i for i in range(norb)]
 gf_struct = [ [s, orb_names] for s in spin_names ]
 
 ### generate hybridisation function
