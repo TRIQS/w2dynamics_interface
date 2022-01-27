@@ -12,6 +12,11 @@ from triqs.operators.util.hamiltonians import h_int_kanamori
 from itertools import product
 from numpy import matrix, array, diag, eye
 from numpy.linalg import inv
+import argparse
+
+parser = argparse.ArgumentParser(description="Test arguments")
+parser.add_argument('--gccver_ge11', action='store_true', help="Use gcc11+ reference data")
+args, unknown = parser.parse_known_args()
 
 # ==== System Parameters ====
 beta = 30.                      # Inverse temperature
@@ -112,7 +117,10 @@ if mpi.is_master_node():
         results["G_tau"] = S.G_tau
 
 from triqs.utility.h5diff import h5diff
-h5diff("2orb_Discrete_Bath.ref.h5","2orb_Discrete_Bath.out.h5", precision=1.e-5)
+if args.gccver_ge11:
+    h5diff("2orb_Discrete_Bath.gccver_ge11.ref.h5","2orb_Discrete_Bath.out.h5", precision=1.e-5)
+else:
+    h5diff("2orb_Discrete_Bath.ref.h5","2orb_Discrete_Bath.out.h5", precision=1.e-5)
 
 
 # ==== Construct the CTHYB solver using the Delta_tau + h_0 Interface ====
@@ -144,5 +152,9 @@ if mpi.is_master_node():
         results["G_iw"] = S.G_iw
         results["G_tau"] = S.G_tau
 
-h5diff("2orb_Discrete_Bath.ref.h5", "2orb_Discrete_Bath.delta_interface.out.h5",
+if args.gccver_ge11:
+    h5diff("2orb_Discrete_Bath.gccver_ge11.ref.h5", "2orb_Discrete_Bath.delta_interface.out.h5",
+       precision=1.e-3)
+else:
+    h5diff("2orb_Discrete_Bath.ref.h5", "2orb_Discrete_Bath.delta_interface.out.h5",
        precision=1.e-3)
