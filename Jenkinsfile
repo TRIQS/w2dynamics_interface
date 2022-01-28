@@ -53,7 +53,7 @@ for (int i = 0; i < dockerPlatforms.size(); i++) {
 
 /****************** osx builds (on host) */
 def osxPlatforms = [
-  ["gcc", ['CC=gcc-11', 'CXX=g++-11', 'FC=gfortran-11']],
+  /* ["gcc", ['CC=gcc-11', 'CXX=g++-11', 'FC=gfortran-11']], Disable gcc-11 build for OSX */
   ["clang", ['CC=$BREW/opt/llvm/bin/clang', 'CXX=$BREW/opt/llvm/bin/clang++', 'FC=gfortran-11', 'CXXFLAGS=-I$BREW/opt/llvm/include', 'LDFLAGS=-L$BREW/opt/llvm/lib']]
 ]
 for (int i = 0; i < osxPlatforms.size(); i++) {
