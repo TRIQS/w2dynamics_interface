@@ -480,10 +480,10 @@ TaudiffMax = -1.0""" % norb
         ### add perturbation order as observable
         #print 'measure_pert_order ', measure_pert_order 
         if measure_pert_order:
-            hist = result.other["hist"]
+            self.hist = result.other["hist"]
             #print 'hist.shape', hist.shape
 
         ### GF in Legendre expansion
         if measure_G_l:
-            Gl = result.other["gleg-full"]
-            #print 'Gl.shape', Gl.shape
+            self.G_l = result.other["gleg-full"]
+            #print 'G_l.shape', G_l.shape
