@@ -478,8 +478,9 @@ TaudiffMax = -1.0""" % norb
 
             elif cfg["QMC"]["WormMeasP3iwPH"] == 1 or cfg["QMC"]["WormMeasP2iwPH"] == 1:
 
-                print(f"worm sector index = {worm_get_sector_index(cfg['QMC'])}")            
-                print('--> WormMeasP3iwPH / WormMeasP2iwPH')
+                if mpi.rank == 0:
+                    print(f"worm sector index = {worm_get_sector_index(cfg['QMC'])}")            
+                    print('--> WormMeasP3iwPH / WormMeasP2iwPH')
 
                 # -- Two-particle response-function with two frequencies worm sampling
 
