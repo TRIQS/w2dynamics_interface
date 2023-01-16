@@ -340,9 +340,9 @@ TaudiffMax = -1.0""" % norb
                 
             elif worm_get_sector_index(cfg['QMC']) == 2:
               
-              gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+                  gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
 
-              from w2dyn.auxiliaries.compound_index import index2component_general
+                  from w2dyn.auxiliaries.compound_index import index2component_general
 
                   components = []
 
