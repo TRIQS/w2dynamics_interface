@@ -458,8 +458,7 @@ TaudiffMax = -1.0""" % norb
                     solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
                     solver.umatrix = U_ijkl
                     result_gen, result_comp = \
-                        solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
-
+                        solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)                    
                     g4iw_keys = [ key for key in result_comp.other.keys() if 'g4iw-worm' in key ]
                     assert(len(g4iw_keys) == 1)
                     g4iw_key = g4iw_keys[0]
@@ -476,7 +475,9 @@ TaudiffMax = -1.0""" % norb
                     
                     self.G2_worm_components.append((component, G2_mean, G2_err))
 
-            elif cfg["QMC"]["WormMeasP3iwPH"] == 1 or cfg["QMC"]["WormMeasP2iwPH"] == 1:
+            elif cfg["QMC"]["WormMeasP3iwPH"] == 1 or \
+                 cfg["QMC"]["WormMeasP2iwPH"] == 1 or \
+                 cfg["QMC"]["WormMeasP2tauPH"] == 1 :
 
                 if mpi.rank == 0:
                     print(f"worm sector index = {worm_get_sector_index(cfg['QMC'])}")            
@@ -497,6 +498,11 @@ TaudiffMax = -1.0""" % norb
                     mesh = bmesh
                     gf_shape = (1, len(bmesh))
                     result_key = 'p2iw-worm'
+                elif cfg["QMC"]["WormMeasP2tauPH"] == 1:
+                    bmesh = MeshImTime(beta=self.beta, S="Boson", n_max=self.n_tau*2)
+                    mesh = bmesh
+                    gf_shape = (1, len(bmesh))
+                    result_key = 'p2tau-worm'
                 else:
                     raise NotImplementedError
                 
@@ -544,7 +550,6 @@ TaudiffMax = -1.0""" % norb
                     solver.umatrix = U_ijkl
                     result_gen, result_comp = \
                         solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
-                    
                     keys = [ key for key in result_comp.other.keys() if result_key in key ]
                     assert(len(keys) == 1)
                     key = keys[0]
@@ -561,6 +566,7 @@ TaudiffMax = -1.0""" % norb
                     
                     self.GF_worm_components.append((component, gf_mean, gf_err))
 
+                    return result_gen, result_comp
             else:
                 raise NotImplementedError
                     
