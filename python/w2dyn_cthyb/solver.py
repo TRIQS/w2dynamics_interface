@@ -403,8 +403,8 @@ TaudiffMax = -1.0""" % norb
                       # Remove axis 0 from local samples by averaging, so
                       # no data remains unused even if there is more than
                       # one local sample (should not happen)
-                      gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name].local,
-                                                           axis=0)
+                      gtau[0, b1, s1, b2, s2, :] = result.other[gtau_name]
+            
                   gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
             elif cfg["QMC"]["FourPnt"] == 8: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
