@@ -566,7 +566,6 @@ TaudiffMax = -1.0""" % norb
                     
                     self.GF_worm_components.append((component, gf_mean, gf_err))
 
-                    return result_gen, result_comp
             else:
                 raise NotImplementedError
                     
@@ -617,3 +616,13 @@ TaudiffMax = -1.0""" % norb
         if measure_G_l:
             self.G_l = result.other["gleg-full"]
             #print 'G_l.shape', G_l.shape
+
+        if cfg["QMC"]["FourPnt"] == 8 or \
+           cfg["QMC"]["WormMeasP3iwPH"] == 1 or \
+           cfg["QMC"]["WormMeasP2iwPH"] == 1 or \
+           cfg["QMC"]["WormMeasP2tauPH"] == 1 :
+            
+            return result_gen, result_comp
+        
+        if measure_G_tau:
+            return result_aux, result
