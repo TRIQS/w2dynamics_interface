@@ -118,7 +118,7 @@ class Solver():
         U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
         U_ijkl = U_ijkl.reshape(norb*2, norb*2, norb*2, norb*2)
         self.norb = norb
-        
+
         if self.delta_interface:
             t_ij_matrix = dict_to_matrix(extract_h_dict(h_0), self.gf_struct)
         else:
@@ -127,8 +127,8 @@ class Solver():
             self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
             self.Delta_tau << Fourier(Delta_iw)
 
-            assert len(t_ij_lst) in set([1, 2, 4]), \
-                  "For now t_ij_lst must not contain more than 4 blocks; generalize it!"
+            #assert len(t_ij_lst) in set([1, 2, 4]), \
+            #      "For now t_ij_lst must not contain more than 4 blocks; generalize it!"
             t_ij_matrix = block_diag(*t_ij_lst)
 
         # in w2dyn Delta is a hole propagator
