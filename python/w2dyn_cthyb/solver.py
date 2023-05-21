@@ -566,9 +566,58 @@ TaudiffMax = -1.0""" % norb
                     
                     self.GF_worm_components.append((component, gf_mean, gf_err))
 
-            else:
-                raise NotImplementedError
-                    
+        if measure_g4iw_ph:
+            # Set necessary configuration parameters for the solver
+            # and construct a new one so the Fortran module also gets
+            # them (config is currently passed in the constructor)
+            cfg["QMC"]["FourPnt"] = 8
+            cfg["QMC"]["N4iwf"] = n4iwf
+            cfg["QMC"]["N4iwb"] = n4iwb
+            cfg["QMC"]["PercentageWormInsert"] = percentageworminsert
+            cfg["QMC"]["PercentageWormReplace"] = percentagewormreplace
+            cfg["QMC"]["WormMeasG4iw"] = 1
+            cfg["QMC"]["WormSearchEta"] = 1
+            solver = impurity.CtHybSolver(cfg, Nseed, 0,0,0, False, mpi_comm)
+
+            g4iw = dict()
+            # the number of components could be reduced by restricting
+            # it to the requested blocks (measure_G2_blocks solve
+            # parameter) and the nonzero elements for the given
+            # interaction (if easily determinable)
+            mccfgcontainer = []
+            for icomponent in (wormcomponents
+                               if wormcomponents is not None
+                               else range(1, (2*norb)**4+1)):
+
+                if mpi.rank == 0:
+                    print('Sampling worm component {}'.format(icomponent))
+
+                solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
+                solver.umatrix = U_ijkl
+                res_gen, res_g4comp = solver.solve_comp_stats(1, 4,
+                                                              icomponent,
+                                                              mccfgcontainer)
+
+                # Collect components into right format for the
+                # conversion function:
+                # g4iw["g4iw-worm/{:05}".format(compound_index)]["value"]
+                # should give the value of the component specified by
+                # compound_index and replacing "value" by "error" the
+                # error
+                for i in res_g4comp.other.keys():
+                    if "g4iw-worm" in i:
+                        g4iw[i] = res_g4comp.other[i]
+
+            self.G2_iw_ph = w2dyn_g4iw_worm_to_triqs_block2gf(g4iw,
+                                                              self.beta,
+                                                              norb,
+                                                              self.gf_struct)
+            self.G2_iw_ph_error = (
+                w2dyn_g4iw_worm_to_triqs_block2gf(g4iw,
+                                                  self.beta,
+                                                  norb,
+                                                  self.gf_struct,
+                                                  qtype=(lambda x: x.stderr())))                    
 
 
         def bs_diagflat(bs_array):
@@ -622,7 +671,13 @@ TaudiffMax = -1.0""" % norb
            cfg["QMC"]["WormMeasP2iwPH"] == 1 or \
            cfg["QMC"]["WormMeasP2tauPH"] == 1 :
             
-            return result_gen, result_comp
+            if hasattr(self, 'result_gen'):
+                return result_gen, result_comp
+            else:
+                return
         
         if measure_G_tau:
-            return result_aux, result
+            if hasattr(self, 'result_aux'):
+                return result_aux, result
+            else:
+                return result
