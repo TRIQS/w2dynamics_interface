@@ -70,7 +70,7 @@ message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
 
 # --- Define the w2dynamics interface version numbers and get the git hash
-set(W2DYN_GIT_HASH d02d8c9973fec34540061ea3ec5705bbd25bdc5b)
+set(W2DYN_GIT_HASH a6ad6110f869a0b68336ef3514127e48e7b73b03)
 message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
 
 # --- Build w2dynamics as an external project

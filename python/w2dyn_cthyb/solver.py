@@ -649,7 +649,7 @@ TaudiffMax = -1.0""" % norb
             ### I will use the FFT from triqs here...
             for name, g in self.G_tau:
                 bl_size = g.target_shape[0]
-                known_moments = np.zeros((4, bl_size, bl_size), dtype=np.complex)
+                known_moments = np.zeros((4, bl_size, bl_size), dtype=complex)
                 for i in range(bl_size):
                     known_moments[1,i,i] = 1
 

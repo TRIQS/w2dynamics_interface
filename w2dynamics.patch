@@ -1,5 +1,5 @@
 diff --git a/cmake/Modules/SetFortranFlags.cmake b/cmake/Modules/SetFortranFlags.cmake
-index c07d8ce..f874123 100644
+index caab7fc..264978a 100644
 --- a/cmake/Modules/SetFortranFlags.cmake
 +++ b/cmake/Modules/SetFortranFlags.cmake
 @@ -55,12 +55,6 @@ ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fort
@@ -15,3 +15,96 @@ index c07d8ce..f874123 100644
  
  #The following does not seem to get added...
  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+diff --git a/w2dyn/auxiliaries/input.py b/w2dyn/auxiliaries/input.py
+index 2d424e6..1a4f75f 100644
+--- a/w2dyn/auxiliaries/input.py
++++ b/w2dyn/auxiliaries/input.py
+@@ -312,7 +312,7 @@ def read_hamiltonian(hk_file, spin_orbit=False):
+     if header[0] == 'VERSION':
+         warn("Version 2 headers are obsolete (specify in input file!)")
+         nkpoints, natoms = map(int, nextline())
+-        lines = np.array([nextline() for _ in range(natoms)], np.int)
++        lines = np.array([nextline() for _ in range(natoms)], np.int64)
+         nbands = np.sum(lines[:,:2])
+         del lines, natoms
+     elif len(header) != 3:
+diff --git a/w2dyn/auxiliaries/quantities.py b/w2dyn/auxiliaries/quantities.py
+index 2beeede..201264c 100644
+--- a/w2dyn/auxiliaries/quantities.py
++++ b/w2dyn/auxiliaries/quantities.py
+@@ -21,7 +21,7 @@ def ineq_quantity(iter, qname, field=("value", "error"), ineq=None,
+     if file_version is None:
+         file_version = tuple(iter.parent.attrs["outfile-version"])
+     try:
+-        ineq = np.atleast_1d(np.asarray(ineq, dtype=np.int))
++        ineq = np.atleast_1d(np.asarray(ineq, dtype=np.int64))
+     except TypeError:
+         if ineq is None: ineq = slice(None)
+     if qname in iter:
+diff --git a/w2dyn/dmft/doublecounting.py b/w2dyn/dmft/doublecounting.py
+index 0b5b582..ec608c5 100644
+--- a/w2dyn/dmft/doublecounting.py
++++ b/w2dyn/dmft/doublecounting.py
+@@ -407,7 +407,7 @@ class Fixed_dp_Distance():
+     a=0
+     for a in range(0,natoms):
+       for b in range(0,np.asarray(siw_dd).shape[2]):
+-        idx = np.int(b + a*dc.shape[0]/natoms)
++        idx = np.int64(b + a*dc.shape[0]/natoms)
+         #print '              DC Bands:', idx, a
+         dc[idx,0,idx,0] = siw_t2g_real_avg
+         dc[idx,1,idx,1] = siw_t2g_real_avg
+diff --git a/w2dyn/dmft/impurity.py b/w2dyn/dmft/impurity.py
+index c2ce965..ae2434a 100644
+--- a/w2dyn/dmft/impurity.py
++++ b/w2dyn/dmft/impurity.py
+@@ -70,10 +70,10 @@ class CtHybConfig:
+             return cls(*solver.get_mc_config(noper))
+         else:
+             return cls(np.array((), dtype=np.double),
+-                       np.array((), dtype=np.int),
+-                       np.array((), dtype=np.int),
+-                       np.array((), dtype=np.int),
+-                       np.array((), dtype=np.int),
++                       np.array((), dtype=np.int64),
++                       np.array((), dtype=np.int64),
++                       np.array((), dtype=np.int64),
++                       np.array((), dtype=np.int64),
+                        outer_sst, outer_state)
+ 
+     def set_to_ctqmc(self, solver):
+@@ -719,8 +719,8 @@ class CtHybSolver(ImpuritySolver):
+             ctqmc.wormeta[:] = np.double(self.config['QMC']['WormEta'])
+             max_iter = 50
+             for i_try in range(max_iter):
+-                steps_worm = np.array(0, dtype=np.int)
+-                steps_z = np.array(0, dtype=np.int)
++                steps_worm = np.array(0, dtype=np.int64)
++                steps_z = np.array(0, dtype=np.int64)
+                 ctqmc.count_steps(isector, icomponent, WormWarmups, steps_worm, steps_z)
+                 if not (steps_worm + steps_z == WormWarmups):
+                     raise ValueError('{} steps in worm, {} steps in Z, '
+@@ -750,8 +750,8 @@ class CtHybSolver(ImpuritySolver):
+                 to get the number of steps in Z and worm space
+                 for a given eta. 
+                 '''
+-                steps_worm = np.array(0, dtype=np.int)
+-                steps_z = np.array(0, dtype=np.int)
++                steps_worm = np.array(0, dtype=np.int64)
++                steps_z = np.array(0, dtype=np.int64)
+                 ctqmc.wormeta[:] = eta # TODO: is it impossible to set a single array element?
+                 ctqmc.count_steps(isector, icomponent, WormWarmups, steps_worm, steps_z)
+                 if not (steps_worm + steps_z == WormWarmups):
+diff --git a/w2dyn/dmft/selfcons.py b/w2dyn/dmft/selfcons.py
+index 2a9e646..042c39d 100644
+--- a/w2dyn/dmft/selfcons.py
++++ b/w2dyn/dmft/selfcons.py
+@@ -458,7 +458,7 @@ class DMFTStep:
+ 
+             # GW Inclusion and Inclusion of GW 0th Moment  
+             if (self.use_gw == 1) and (np.sum(self.siw_full) != 0):
+-                norbitals_per_atom = np.int(self.lattice.norbitals/self.natoms)
++                norbitals_per_atom = np.int64(self.lattice.norbitals/self.natoms)
+                 orbits = slice( atom*norbitals_per_atom , (atom+1)*norbitals_per_atom )
+                 # => Model based
+                 if self.use_gw_kaverage == 0:    
