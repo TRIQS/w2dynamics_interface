@@ -385,7 +385,7 @@ TaudiffMax = -1.0""" % norb
                       # Remove axis 0 from local samples by averaging, so
                       # no data remains unused even if there is more than
                       # one local sample (should not happen)
-                      gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name].local,
+                      gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name],
                                                            axis=0)
                   gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
@@ -471,7 +471,7 @@ TaudiffMax = -1.0""" % norb
             ### I will use the FFT from triqs here...
             for name, g in self.G_tau:
                 bl_size = g.target_shape[0]
-                known_moments = np.zeros((4, bl_size, bl_size), dtype=np.complex)
+                known_moments = np.zeros((4, bl_size, bl_size), dtype=complex)
                 for i in range(bl_size):
                     known_moments[1,i,i] = 1
 
