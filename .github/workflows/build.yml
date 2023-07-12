@@ -64,11 +64,11 @@ jobs:
     - name: Install homebrew dependencies
       if: matrix.os == 'macos-12'
       run: |
-        brew install gcc@11 llvm boost fftw hdf5 open-mpi openblas
+        brew install gcc@12 llvm boost fftw hdf5 open-mpi openblas
         brew install wentzell/triqs/nfft
         pip3 install mako numpy scipy mpi4py
         pip3 install -r requirements.txt
-        echo "FC=gfortran-10" >> $GITHUB_ENV
+        echo "FC=gfortran-13" >> $GITHUB_ENV
         echo "BLAS_ROOT=$(brew --prefix)/opt/openblas" >> $GITHUB_ENV
         echo "LAPACK_ROOT=$(brew --prefix)/opt/openblas" >> $GITHUB_ENV
 
