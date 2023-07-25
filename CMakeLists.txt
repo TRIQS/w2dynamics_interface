@@ -76,12 +76,6 @@ message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
 # --- Build w2dynamics as an external project
 get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-# convert error in warning due to f2py incompatibility
-set(W2DYN_CFLAGS "${CMAKE_C_FLAGS} -Wno-error=incompatible-function-pointer-types")
-message("Detected Clang version 16 or higher. Suppress incompatible function pointer type warnings for clang.")
-endif()
-
 include(ExternalProject)
 ExternalProject_Add(w2dynamics
   PREFIX w2dyn_project
@@ -94,7 +88,6 @@ ExternalProject_Add(w2dynamics
              -DPYTHON_EXECUTABLE=${TRIQS_PYTHON_EXECUTABLE}
              -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
              -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
-             -DCMAKE_C_FLAGS=${W2DYN_CFLAGS}
   INSTALL_COMMAND ""
   PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} checkout . && ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
 )
