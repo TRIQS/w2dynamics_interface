@@ -72,6 +72,11 @@ jobs:
         echo "BLAS_ROOT=$(brew --prefix)/opt/openblas" >> $GITHUB_ENV
         echo "LAPACK_ROOT=$(brew --prefix)/opt/openblas" >> $GITHUB_ENV
 
+    - name: add clang cxxflags
+      if: ${{ contains(matrix.cxx, 'clang') }}
+      run:
+        echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
+
     - name: Build & Install TRIQS
       env:
         CC: ${{ matrix.cc }}
