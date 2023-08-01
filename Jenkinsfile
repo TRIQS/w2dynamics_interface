@@ -5,7 +5,7 @@ def dockerName = projectName.toLowerCase();
 def documentationPlatform = "ubuntu-clang"
 /* depend on triqs upstream branch/project */
 /* def triqsBranch = env.CHANGE_TARGET ?: env.BRANCH_NAME */
-def triqsBranch = "unstable"
+def triqsBranch = "3.1.x"
 def triqsProject = '/TRIQS/triqs/' + triqsBranch.replaceAll('/', '%2F')
 /* whether to keep and publish the results */
 def keepInstall = !env.BRANCH_NAME.startsWith("PR-")
