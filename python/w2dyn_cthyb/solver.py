@@ -381,7 +381,7 @@ TaudiffMax = -1.0""" % norb
 
                       solver.set_problem(imp_problem)
                       solver.umatrix = U_ijkl
-                      result_aux, result = solver.solve_component(1,2,comp_ind,mccfgcontainer)
+                      result_aux, result = solver.solve_component(1, 2, comp_ind, mccfgcontainer)
 
                       for i in list(result.other.keys()):
 
@@ -404,8 +404,7 @@ TaudiffMax = -1.0""" % norb
                       # no data remains unused even if there is more than
                       # one local sample (should not happen)
                       gtau[0, b1, s1, b2, s2, :] = result.other[gtau_name]
-            
-                  gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
             elif cfg["QMC"]["FourPnt"] == 8: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
 

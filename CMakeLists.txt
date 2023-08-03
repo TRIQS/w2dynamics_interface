@@ -20,11 +20,8 @@
 #
 # ##############################################################################
 
-cmake_minimum_required(VERSION 3.12.4 FATAL_ERROR)
-cmake_policy(VERSION 3.12.4)
-if(POLICY CMP0077)
-  cmake_policy(SET CMP0077 NEW)
-endif()
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_policy(VERSION 3.20)
 
 # ############
 # Define Project
@@ -70,7 +67,7 @@ message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
 
 # --- Define the w2dynamics interface version numbers and get the git hash
-set(W2DYN_GIT_HASH a6ad6110f869a0b68336ef3514127e48e7b73b03)
+set(W2DYN_GIT_HASH b5a2bcc9ecdb694703a4e683b63352bedf116882)
 message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
 
 # --- Build w2dynamics as an external project
@@ -79,7 +76,8 @@ get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES
 include(ExternalProject)
 ExternalProject_Add(w2dynamics
   PREFIX w2dyn_project
-  GIT_REPOSITORY https://github.com/w2dynamics/w2dynamics
+  #GIT_REPOSITORY https://github.com/w2dynamics/w2dynamics
+  GIT_REPOSITORY https://github.com/the-hampel/w2dynamics
   GIT_TAG ${W2DYN_GIT_HASH}
   GIT_CONFIG advice.detachedHead=false
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
@@ -132,6 +130,7 @@ target_compile_options(${PROJECT_NAME}_warnings
   INTERFACE
     -Wall
     -Wextra
+    -Wfloat-conversion
     -Wpedantic
     -Wno-sign-compare
     $<$<CXX_COMPILER_ID:GNU>:-Wno-comma-subscript>
@@ -184,7 +183,7 @@ if(BUILD_DEBIAN_PACKAGE AND NOT IS_SUBPROJECT)
   set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
   set(CPACK_PACKAGE_CONTACT "https://github.com/TRIQS/${PROJECT_NAME}")
   execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CMAKE_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "triqs (>= 3.1)")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "triqs (>= 3.2)")
   set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
   set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
   include(CPack)
