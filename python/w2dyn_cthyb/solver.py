@@ -339,71 +339,71 @@ TaudiffMax = -1.0""" % norb
                 gtau = result.other["gtau-full"]
                 
             elif worm_get_sector_index(cfg['QMC']) == 2:
-              
-                  gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
 
-                  from w2dyn.auxiliaries.compound_index import index2component_general
+                gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
 
-                  components = []
+                from w2dyn.auxiliaries.compound_index import index2component_general
 
-                  for comp_ind in range(1,(2*norb)**2+1):
+                components = []
 
-                      tmp = index2component_general(norb, 2, int(comp_ind))
+                for comp_ind in range(1, (2*norb)**2+1):
 
-                      ### check if ftau is nonzero
+                    tmp = index2component_general(norb, 2, int(comp_ind))
 
-                      bands = tmp[1]
-                      spins = tmp[2]
+                    ### check if ftau is nonzero
 
-                      b1 = bands[0]
-                      b2 = bands[1]
-                      s1 = spins[0]
-                      s2 = spins[1]
+                    bands = tmp[1]
+                    spins = tmp[2]
 
-                      all_zeros = not np.any(ftau[:,b1,s1,b2,s2]>1e-5)
+                    b1 = bands[0]
+                    b2 = bands[1]
+                    s1 = spins[0]
+                    s2 = spins[1]
 
-                      if not all_zeros:
-                          components = np.append(components, comp_ind)
+                    all_zeros = not np.any(ftau[:, b1, s1, b2, s2] > 1e-5)
 
-                  if mpi.rank == 0:
-                      print('worm components to measure: ', components)
+                    if not all_zeros:
+                        components = np.append(components, comp_ind)
 
-                  ### divide either max_time Nmeas among the nonzero components
-                  if max_time <= 0:
-                      cfg["QMC"]["Nmeas"] = int(cfg["QMC"]["Nmeas"] / float(len(components)))
-                  else:
-                      cfg["QMC"]["measurement_time"] = int(float(max_time) / float(len(components)))
+                if mpi.rank == 0:
+                    print('worm components to measure: ', components)
 
-                  for comp_ind in components:
+                ### divide either max_time Nmeas among the nonzero components
+                if max_time <= 0:
+                    cfg["QMC"]["Nmeas"] = int(cfg["QMC"]["Nmeas"] / float(len(components)))
+                else:
+                    cfg["QMC"]["measurement_time"] = int(float(max_time) / float(len(components)))
 
-                      if mpi.rank == 0:
-                          print('--> comp_ind', comp_ind)
+                for comp_ind in components:
 
-                      solver.set_problem(imp_problem)
-                      solver.umatrix = U_ijkl
-                      result_aux, result = solver.solve_component(1, 2, comp_ind, mccfgcontainer)
+                    if mpi.rank == 0:
+                        print('--> comp_ind', comp_ind)
 
-                      for i in list(result.other.keys()):
+                    solver.set_problem(imp_problem)
+                    solver.umatrix = U_ijkl
+                    result_aux, result = solver.solve_component(1, 2, comp_ind, mccfgcontainer)
 
-                          if "gtau-worm" in i:
-                              gtau_name = i
+                    for i in list(result.other.keys()):
 
-                      tmp = index2component_general(norb, 2, int(comp_ind))
+                        if "gtau-worm" in i:
+                            gtau_name = i
 
-                      ### check if ftau is nonzero
+                    tmp = index2component_general(norb, 2, int(comp_ind))
 
-                      bands = tmp[1]
-                      spins = tmp[2]
+                    ### check if ftau is nonzero
 
-                      b1 = bands[0]
-                      b2 = bands[1]
-                      s1 = spins[0]
-                      s2 = spins[1]
+                    bands = tmp[1]
+                    spins = tmp[2]
 
-                      # Remove axis 0 from local samples by averaging, so
-                      # no data remains unused even if there is more than
-                      # one local sample (should not happen)
-                      gtau[0, b1, s1, b2, s2, :] = result.other[gtau_name]
+                    b1 = bands[0]
+                    b2 = bands[1]
+                    s1 = spins[0]
+                    s2 = spins[1]
+
+                    # Remove axis 0 from local samples by averaging, so
+                    # no data remains unused even if there is more than
+                    # one local sample (should not happen)
+                    gtau[0, b1, s1, b2, s2, :] = result.other[gtau_name]
                 gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
             elif cfg["QMC"]["FourPnt"] == 8: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
