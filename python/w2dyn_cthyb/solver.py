@@ -113,11 +113,10 @@ class Solver():
         U_ijkl = dict_to_matrix(extract_U_dict4(h_int), self.gf_struct)
 
         ### Make sure that the spin index is the fastest running variable
-        norb = U_ijkl.shape[0]//2
-        U_ijkl = U_ijkl.reshape(2,norb, 2,norb, 2,norb, 2,norb)
+        self.norb = U_ijkl.shape[0]//2
+        U_ijkl = U_ijkl.reshape(2,self.norb, 2,self.norb, 2,self.norb, 2,self.norb)
         U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
-        U_ijkl = U_ijkl.reshape(norb*2, norb*2, norb*2, norb*2)
-        self.norb = norb
+        U_ijkl = U_ijkl.reshape(self.norb*2, self.norb*2, self.norb*2, self.norb*2)
 
         if self.delta_interface:
             t_ij_matrix = dict_to_matrix(extract_h_dict(h_0), self.gf_struct)
@@ -139,8 +138,9 @@ class Solver():
 
         ### transform t_ij from (f,f) to (o,s,o,s) format
 
-        norb = int(t_ij_matrix.shape[0]/2)
-        t_ij_matrix = t_ij_matrix.reshape(2, norb, 2, norb)
+        assert int(t_ij_matrix.shape[0]/2) == self.norb, 'number of orbitals of U_ijkl and t_ij does not match'
+
+        t_ij_matrix = t_ij_matrix.reshape(2, self.norb, 2, self.norb)
         t_osos_tensor = t_ij_matrix.transpose(1,0, 3,2)
 
         ftau, _, __ = triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau(self.Delta_tau)
@@ -155,7 +155,7 @@ class Solver():
 Nd = %i
 Hamiltonian = Kanamori
 [QMC]
-TaudiffMax = -1.0""" % norb
+TaudiffMax = -1.0""" % self.norb
 
         cfg_file = tempfile.NamedTemporaryFile(delete=False, mode = "w")
         cfg_file.write(Parameters_in)
@@ -281,12 +281,12 @@ TaudiffMax = -1.0""" % norb
 
         ### generate dummy input that we don't necessarily need
         niw     = 2*cfg["QMC"]["Niw"]
-        g0inviw = np.zeros(shape=(2*self.n_iw, norb, 2, norb, 2))
-        fiw     = np.zeros(shape=(2*self.n_iw, norb, 2, norb, 2))
-        fmom    = np.zeros(shape=(2, norb, 2, norb, 2))
+        g0inviw = np.zeros(shape=(2*self.n_iw, self.norb, 2, self.norb, 2))
+        fiw     = np.zeros(shape=(2*self.n_iw, self.norb, 2, self.norb, 2))
+        fmom    = np.zeros(shape=(2, self.norb, 2, self.norb, 2))
         symmetry_moves = ()
         paramag = False
-        atom = config.atomlist_from_cfg(cfg, norb)[0]
+        atom = config.atomlist_from_cfg(cfg, self.norb)[0]
 
         ### if calculation not complex, the solver must have only
         ### real arrays as input
@@ -340,15 +340,15 @@ TaudiffMax = -1.0""" % norb
                 
             elif worm_get_sector_index(cfg['QMC']) == 2:
 
-                gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
 
                 from w2dyn.auxiliaries.compound_index import index2component_general
 
                 components = []
 
-                for comp_ind in range(1, (2*norb)**2+1):
+                for comp_ind in range(1, (2*self.norb)**2+1):
 
-                    tmp = index2component_general(norb, 2, int(comp_ind))
+                    tmp = index2component_general(self.norb, 2, int(comp_ind))
 
                     ### check if ftau is nonzero
 
@@ -388,7 +388,7 @@ TaudiffMax = -1.0""" % norb
                         if "gtau-worm" in i:
                             gtau_name = i
 
-                    tmp = index2component_general(norb, 2, int(comp_ind))
+                    tmp = index2component_general(self.norb, 2, int(comp_ind))
 
                     ### check if ftau is nonzero
 
@@ -419,7 +419,7 @@ TaudiffMax = -1.0""" % norb
                 self.G2_worm_components = []
 
                 # Not used but has to be created..
-                gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
                 gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
                 
                 # Required variables for the w2dynamics DMFT interface
@@ -439,7 +439,7 @@ TaudiffMax = -1.0""" % norb
                         c = np.array(c, copy=True, ndmin=1, dtype=int)
                         noper = 4
                         from w2dyn.auxiliaries.compound_index import componentBS2index_general
-                        idx = componentBS2index_general(norb, noper, c)
+                        idx = componentBS2index_general(self.norb, noper, c)
                         components.append(idx)
 
                 if mpi.rank == 0:
@@ -508,7 +508,7 @@ TaudiffMax = -1.0""" % norb
                 self.GF_worm_components = []
 
                 # Not used but has to be created..
-                gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*self.n_tau))
+                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
                 gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
                 
                 # Required variables for the w2dynamics DMFT interface
@@ -528,7 +528,7 @@ TaudiffMax = -1.0""" % norb
                         c = np.array(c, copy=True, ndmin=1, dtype=int)
                         noper = 4
                         from w2dyn.auxiliaries.compound_index import componentBS2index_general
-                        idx = componentBS2index_general(norb, noper, c)
+                        idx = componentBS2index_general(self.norb, noper, c)
                         components.append(idx)
 
                 if mpi.rank == 0:
@@ -586,7 +586,7 @@ TaudiffMax = -1.0""" % norb
             mccfgcontainer = []
             for icomponent in (wormcomponents
                                if wormcomponents is not None
-                               else range(1, (2*norb)**4+1)):
+                               else range(1, (2*self.norb)**4+1)):
 
                 if mpi.rank == 0:
                     print('Sampling worm component {}'.format(icomponent))
@@ -609,12 +609,12 @@ TaudiffMax = -1.0""" % norb
 
             self.G2_iw_ph = w2dyn_g4iw_worm_to_triqs_block2gf(g4iw,
                                                               self.beta,
-                                                              norb,
+                                                              self.norb,
                                                               self.gf_struct)
             self.G2_iw_ph_error = (
                 w2dyn_g4iw_worm_to_triqs_block2gf(g4iw,
                                                   self.beta,
-                                                  norb,
+                                                  self.norb,
                                                   self.gf_struct,
                                                   qtype=(lambda x: x.stderr())))                    
 
