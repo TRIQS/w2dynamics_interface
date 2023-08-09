@@ -15,7 +15,6 @@ from numpy.linalg import inv
 
 parser = argparse.ArgumentParser(description="Test arguments")
 parser.add_argument('--libcxx', action='store_true', help="Use libcxx reference data")
-parser.add_argument('--gccver_ge11', action='store_true', help="Use gcc11+ reference data")
 args, unknown = parser.parse_known_args()
 
 # ==== System Parameters ====
@@ -120,8 +119,6 @@ if mpi.is_master_node():
 from triqs.utility.h5diff import h5diff
 if args.libcxx:
     h5diff("2orb_Discrete_Bath.libcxx.ref.h5","2orb_Discrete_Bath.out.h5", precision=1.e-5)
-elif args.gccver_ge11:
-    h5diff("2orb_Discrete_Bath.gccver_ge11.ref.h5","2orb_Discrete_Bath.out.h5", precision=1.e-5)
 else:
     h5diff("2orb_Discrete_Bath.ref.h5","2orb_Discrete_Bath.out.h5", precision=1.e-5)
 
@@ -157,9 +154,6 @@ if mpi.is_master_node():
 
 if args.libcxx:
     h5diff("2orb_Discrete_Bath.libcxx.ref.h5", "2orb_Discrete_Bath.delta_interface.out.h5",
-       precision=1.e-3)
-elif args.gccver_ge11:
-    h5diff("2orb_Discrete_Bath.gccver_ge11.ref.h5", "2orb_Discrete_Bath.delta_interface.out.h5",
        precision=1.e-3)
 else:
     h5diff("2orb_Discrete_Bath.ref.h5", "2orb_Discrete_Bath.delta_interface.out.h5",

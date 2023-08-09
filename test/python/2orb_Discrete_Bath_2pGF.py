@@ -15,7 +15,6 @@ from numpy.linalg import inv
 
 parser = argparse.ArgumentParser(description="Test arguments")
 parser.add_argument('--libcxx', action='store_true', help="Use libcxx reference data")
-parser.add_argument('--gccver_ge11', action='store_true', help="Use gcc11+ reference data")
 args, unknown = parser.parse_known_args()
 
 # ==== System Parameters ====
@@ -126,10 +125,6 @@ if mpi.is_master_node():
 from triqs.utility.h5diff import h5diff
 if args.libcxx:
     h5diff("2orb_Discrete_Bath_2pGF.libcxx.ref.h5",
-           "2orb_Discrete_Bath_2pGF.out.h5",
-           precision=1.e-5)
-elif args.gccver_ge11:
-    h5diff("2orb_Discrete_Bath_2pGF.gccver_ge11.ref.h5",
            "2orb_Discrete_Bath_2pGF.out.h5",
            precision=1.e-5)
 else:
