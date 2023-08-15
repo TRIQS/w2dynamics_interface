@@ -129,7 +129,7 @@ class Solver():
 
         random_seed = params_kw.pop("random_seed", 1)
         move_double = params_kw.pop("move_double", True)
-        measure_G_l = params_kw.pop("measure_G_l", True)
+        measure_G_l = params_kw.pop("measure_G_l", False)
         measure_G_tau = params_kw.pop("measure_G_tau", True)
         measure_pert_order = params_kw.pop("measure_pert_order", False)
         statesampling = params_kw.pop("statesampling", False)
@@ -274,7 +274,7 @@ TaudiffMax = -1.0""" % self.norb
         if worm:
 
             # Do not enable measurements if cfg_qmc is supplied in the solve call
-            if 'cfg_qmc' in params_kw:
+            if not 'cfg_qmc' in params_kw:
                 cfg["QMC"]["WormMeasGiw"] = 1
                 cfg["QMC"]["WormMeasGtau"] = 1
                 cfg["QMC"]["WormSearchEta"] = 1
@@ -446,6 +446,9 @@ TaudiffMax = -1.0""" % self.norb
 
             elif cfg["QMC"]["FourPnt"] == 8: # Know that: worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
+                if wormcomponents is not None:
+                    print('WARNING: worm_components parameter not used, set cfg_qmc["WormComponents"] instead.')
+                
                 # -- Two-particle response-function worm sampling
 
                 from triqs.gf import MeshImFreq, MeshProduct, Gf
@@ -518,6 +521,9 @@ TaudiffMax = -1.0""" % self.norb
                  cfg["QMC"]["WormMeasP2iwPH"] == 1 or \
                  cfg["QMC"]["WormMeasP2tauPH"] == 1 :
 
+                if wormcomponents is not None:
+                    print('WARNING: worm_components parameter not used, set cfg_qmc["WormComponents"] instead.')
+                
                 if mpi.rank == 0:
                     print(f"worm sector index = {worm_get_sector_index(cfg['QMC'])}")            
                     print('--> WormMeasP3iwPH / WormMeasP2iwPH')
@@ -659,7 +665,8 @@ TaudiffMax = -1.0""" % self.norb
                                                   self.beta,
                                                   self.norb,
                                                   self.gf_struct,
-                                                  qtype=(lambda x: x.stderr())))                    
+                                                  qtype=(lambda x: x.stderr())))
+            return g4iw
 
 
         def bs_diagflat(bs_array):
