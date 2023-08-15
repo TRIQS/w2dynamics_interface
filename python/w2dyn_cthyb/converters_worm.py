@@ -2,7 +2,7 @@
 #
 # w2dynamics_interface - An Interface to the w2dynamics cthyb code
 #
-# Copyright (C) 2032 by Hugo U. R. Strand, Erik van Loon
+# Copyright (C) 2023 by Hugo U. R. Strand, Erik van Loon
 # Authors: Hugo U.R. Strand, Erik van Loon
 #
 # w2dynamics_interface is free software: you can redistribute it and/or modify it under the
@@ -16,7 +16,7 @@
 # details.
 #
 # You should have received a copy of the GNU General Public License along with
-# TPRF. If not, see <http://www.gnu.org/licenses/>.
+# w2dynamics_interface. If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
 

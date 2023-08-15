@@ -1,23 +1,23 @@
 ################################################################################
 #
-# TRIQS: a Toolbox for Research in Interacting Quantum Systems
+# w2dynamics_interface - An Interface to the w2dynamics cthyb code
 #
 # Copyright (C) 2016-2018, N. Wentzell
 # Copyright (C) 2018-2019, Simons Foundation
 #   author: N. Wentzell
 #
-# TRIQS is free software: you can redistribute it and/or modify it under the
+# w2dynamics_interface is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
 # Foundation, either version 3 of the License, or (at your option) any later
 # version.
 #
-# TRIQS is distributed in the hope that it will be useful, but WITHOUT ANY
+# w2dynamics_interface is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along with
-# TRIQS. If not, see <http://www.gnu.org/licenses/>.
+# w2dynamics_interface. If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
 

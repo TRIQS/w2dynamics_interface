@@ -1,3 +1,25 @@
+################################################################################
+#
+# w2dynamics_interface - An Interface to the w2dynamics cthyb code
+#
+# Copyright (C) 2019 by The Simons Foundation
+# Authors: Andreas Hausoel, Hugo U. R. Strand, Nils Wentzell
+#
+# w2dynamics_interface is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# w2dynamics_interface is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# w2dynamics_interface. If not, see <http://www.gnu.org/licenses/>.
+#
+################################################################################
+
 from triqs.utility import mpi
 
 from .solver import Solver
