@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2019 by The Simons Foundation
 # Copyright (C) 2023 by Hugo U. R. Strand
-# Authors: Andreas Hausoel, Hugo U. R. Strand, Nils Wentzell
+# Authors: Andreas Hausoel, Hugo U. R. Strand, Nils Wentzell, Alexander Hampel
 #
 # w2dynamics_interface is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
@@ -444,7 +444,7 @@ TaudiffMax = -1.0""" % self.norb
                     gtau[0, b1, s1, b2, s2, :] = result.other[gtau_name]
                 gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
-            elif cfg["QMC"]["FourPnt"] == 8: # worm == True and worm_get_sector_index(cfg['QMC']) != 2
+            elif cfg["QMC"]["FourPnt"] == 8: # Know that: worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
                 # -- Two-particle response-function worm sampling
 
@@ -512,6 +512,8 @@ TaudiffMax = -1.0""" % self.norb
                     
                     self.G2_worm_components.append((component, G2_mean, G2_err))
 
+            # In W2Dynamics these measurements do not have cfg["QMC"]["FourPnt"] == 8
+            
             elif cfg["QMC"]["WormMeasP3iwPH"] == 1 or \
                  cfg["QMC"]["WormMeasP2iwPH"] == 1 or \
                  cfg["QMC"]["WormMeasP2tauPH"] == 1 :
@@ -602,7 +604,11 @@ TaudiffMax = -1.0""" % self.norb
                     
                     self.GF_worm_components.append((component, gf_mean, gf_err))
 
-        if measure_g4iw_ph:
+
+        # TRIQS/cthyb like interface to sample all components of the two-particle Green's function
+        # not combinable with passing `cfg_qmc` options to the solver.
+        
+        if measure_g4iw_ph and len(manual_cfg_qmc) == 0:
             # Set necessary configuration parameters for the solver
             # and construct a new one so the Fortran module also gets
             # them (config is currently passed in the constructor)
