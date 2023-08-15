@@ -89,7 +89,8 @@ class Solver():
             quartic local interaction Hamiltonian
         h_0 : triqs.operators.Operator, optional
             quadratic part of the local Hamiltonian, required when `delta_interface=True`.
-        cfg_qmc : (optional) dictionary for passing parameters to W2Dynamics solver manually
+        cfg_qmc : dict, optional
+            set W2Dynamics formatted parameters manually, see https://arxiv.org/abs/1801.10209
         """
 
         n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
