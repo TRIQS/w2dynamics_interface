@@ -1,4 +1,5 @@
 # Copyright (c) 2019-2023 Simons Foundation
+# Copyright (c) 2021-2023 Hugo U.R. Strand
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +16,6 @@
 #
 # Authors: Alexander Hampel, Andreas Hausoel, Alexander Kowalski, Dylan Simon, Hugo U. R. Strand, Nils Wentzell
 
-"""
 import os, sys
 import tempfile
 import numpy as np
