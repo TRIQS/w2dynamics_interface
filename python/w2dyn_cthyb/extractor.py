@@ -20,7 +20,7 @@ from .converters import *
 from triqs.gf import MeshImFreq
 from triqs.gf import BlockGf, inverse, iOmega_n, Fourier
 
-# ----------------------------------------------------------------------    
+# ----------------------------------------------------------------------
 def extract_deltaiw_and_tij_from_G0(G0_iw, gf_struct):
 
     iw_mesh = G0_iw.mesh
@@ -42,10 +42,10 @@ def extract_deltaiw_and_tij_from_G0(G0_iw, gf_struct):
     return Delta_iw, H_loc_block
 
 
-# ----------------------------------------------------------------------    
+# ----------------------------------------------------------------------
 ### test program for extractor
 if __name__ == '__main__':
-    
+
     ### generate a test-impurity
     gf_struct, Delta_tau, H_loc = get_test_impurity_model(norb=3, ntau=1000, beta=10.0)
 
@@ -66,8 +66,8 @@ if __name__ == '__main__':
         delta_block = inverse(iOmega_n - 0.3 * eps)
         delta_iw << delta_block
 
-    
-    ### generate the corresponding hybridisation function and hopping matrix 
+
+    ### generate the corresponding hybridisation function and hopping matrix
     G0_iw = BlockGf(mesh=iw_mesh, gf_struct=gf_struct)
     H_loc_original = []
 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     ### extract Delta and hopping matrix from G0 (alternative)
     #Delta_iw_reconst = BlockGf(mesh=iw_mesh, gf_struct=gf_struct)
     #H_loc_reconst = []
-    
+
     #for block, g0_iw in G0_iw:
 
         #tail, err = g0_iw.fit_hermitian_tail()
@@ -100,8 +100,8 @@ if __name__ == '__main__':
         #Delta_iw_reconst[block] << iOmega_n - H_loc - inverse(g0_iw)
 
         #H_loc_reconst.append(H_loc)
-        
-    
+
+
     # ------------------------------------------------------------------
     print(" ")
     print("compare H_loc:")
@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     print(" ")
     print("compare delta:")
-    
+
     for block, _ in Delta_iw:
         d1 = Delta_iw[block].data
         d2 = Delta_iw_reconst[block].data

@@ -45,7 +45,7 @@ from .converters import w2dyn_g4iw_worm_to_triqs_block2gf
 from .extractor import extract_deltaiw_and_tij_from_G0
 
 class Solver():
-    
+
     def __init__(self, beta, gf_struct, n_iw=1025, n_tau=10001, n_l=30, delta_interface=False, complex=False):
         """Constructor setting up response function parameters
 
@@ -87,7 +87,7 @@ class Solver():
             self.G0_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
 
     def solve(self, **params_kw):
-        """Solve impurity model 
+        """Solve impurity model
 
         Parameters
         ----------
@@ -117,7 +117,7 @@ class Solver():
         h_int = params_kw.pop("h_int")
         self.last_solve_params = { "n_cycles": n_cycles, "n_warmup_cycles": n_warmup_cycles,
             "length_cycle": length_cycle, "h_int": h_int }
-        
+
         if self.delta_interface:
             h_0 = params_kw.pop("h_0")
             self.last_solve_params["h_0"] = h_0
@@ -137,7 +137,7 @@ class Solver():
         ### Andi: the definition in the U-Matrix in w2dyn is
         ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k
         ###                                         !   !
-        ### a factor of 2 is needed to compensate the 1/2, and a minus for 
+        ### a factor of 2 is needed to compensate the 1/2, and a minus for
         ### exchange of the annihilators; is this correct for any two particle interaction term?
 
         U_ijkl = dict_to_matrix(extract_U_dict4(h_int), self.gf_struct)
@@ -178,7 +178,7 @@ class Solver():
 
         ### now comes w2dyn!
         # Make a temporary files with input parameters
-        
+
         Parameters_in = """#asdf
 [General]
 [Atoms]
@@ -191,8 +191,8 @@ TaudiffMax = -1.0""" % self.norb
         cfg_file = tempfile.NamedTemporaryFile(delete=False, mode = "w")
         cfg_file.write(Parameters_in)
         cfg_file.close()
-        
-        ### read w2dyn parameter file; later we will replace this by a 
+
+        ### read w2dyn parameter file; later we will replace this by a
         ### converter of triqs-parameters to w2dyn-parameters
 
         key_value_args={}
@@ -304,7 +304,7 @@ TaudiffMax = -1.0""" % self.norb
                 print(f'[[{header}]]')
                 for key, value in section.items():
                     print(f'cfg[{header}][{key}] = {value}')
-            
+
         ### initialize the solver; it needs the config-string
         Nseed = random_seed + mpi.rank
         use_mpi = False
@@ -332,7 +332,7 @@ TaudiffMax = -1.0""" % self.norb
             ftau = np.real(ftau)
             muimp = np.real(t_osos_tensor)
             U_ijkl = np.real(U_ijkl)
- 
+
         ### here the properties of the impurity will be defined
         imp_problem = impurity.ImpurityProblem(
             self.beta, g0inviw, fiw, fmom, ftau,
@@ -342,11 +342,11 @@ TaudiffMax = -1.0""" % self.norb
         print("\n" + "."*40)
 
         ### hardcode the set of conserved quantities to number of electrons
-        ### and activate the automatic minimalisation procedure of blocks 
+        ### and activate the automatic minimalisation procedure of blocks
         ### ( QN "All" does this)
         #print "imp_problem.interaction.quantum_numbers ",  imp_problem.interaction.quantum_numbers
         imp_problem.interaction.quantum_numbers = ( "Nt", "All" )
-        #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt", "Qzt" ) 
+        #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt", "Qzt" )
         #imp_problem.interaction.quantum_numbers = ( "Nt", "Szt" )
         #imp_problem.interaction.quantum_numbers = ( "Nt" )
 
@@ -365,12 +365,12 @@ TaudiffMax = -1.0""" % self.norb
                 gtau = result.other["gtau-full"]
 
             elif not worm:
-                
+
                 solver.set_problem(imp_problem)
                 solver.umatrix = U_ijkl
                 result = solver.solve(iter_no, mccfgcontainer)
                 gtau = result.other["gtau-full"]
-                
+
             elif worm_get_sector_index(cfg['QMC']) == 2:
 
                 gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
@@ -436,7 +436,7 @@ TaudiffMax = -1.0""" % self.norb
 
                 if wormcomponents is not None:
                     print('WARNING: worm_components parameter not used, set cfg_qmc["WormComponents"] instead.')
-                
+
                 # -- Two-particle response-function worm sampling
 
                 from triqs.gf import MeshImFreq, MeshProduct, Gf
@@ -444,13 +444,13 @@ TaudiffMax = -1.0""" % self.norb
                 bmesh = MeshImFreq(beta=self.beta, S="Boson", n_max=cfg["QMC"]["N4iwb"]+1)
                 mesh = MeshProduct(fmesh, fmesh, bmesh)
                 g4iw_shape = (1, len(fmesh), len(fmesh), len(bmesh))
-                
+
                 self.G2_worm_components = []
 
                 # Not used but has to be created..
                 gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
                 gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
-                
+
                 # Required variables for the w2dynamics DMFT interface
                 iimp = 0
                 iter_no = 0
@@ -474,7 +474,7 @@ TaudiffMax = -1.0""" % self.norb
                 if mpi.rank == 0:
                     print(f'WormComponents = {cfg["QMC"]["WormComponents"]}')
                     print(f'WormComponentIndices = {components}')
-                                    
+
                 for component in components:
                     if mpi.rank == 0:
                         print('='*72)
@@ -486,7 +486,7 @@ TaudiffMax = -1.0""" % self.norb
                     solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
                     solver.umatrix = U_ijkl
                     result_gen, result_comp = \
-                        solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)                    
+                        solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
                     g4iw_keys = [ key for key in result_comp.other.keys() if 'g4iw-worm' in key ]
                     assert(len(g4iw_keys) == 1)
                     g4iw_key = g4iw_keys[0]
@@ -500,20 +500,20 @@ TaudiffMax = -1.0""" % self.norb
 
                     G2_err = Gf(mesh=mesh, target_shape=[])
                     G2_err.data[:] = g4iw.stderr()
-                    
+
                     self.G2_worm_components.append((component, G2_mean, G2_err))
 
             # In W2Dynamics these measurements do not have cfg["QMC"]["FourPnt"] == 8
-            
+
             elif cfg["QMC"]["WormMeasP3iwPH"] == 1 or \
                  cfg["QMC"]["WormMeasP2iwPH"] == 1 or \
                  cfg["QMC"]["WormMeasP2tauPH"] == 1 :
 
                 if wormcomponents is not None:
                     print('WARNING: worm_components parameter not used, set cfg_qmc["WormComponents"] instead.')
-                
+
                 if mpi.rank == 0:
-                    print(f"worm sector index = {worm_get_sector_index(cfg['QMC'])}")            
+                    print(f"worm sector index = {worm_get_sector_index(cfg['QMC'])}")
                     print('--> WormMeasP3iwPH / WormMeasP2iwPH')
 
                 # -- Two-particle response-function with two frequencies worm sampling
@@ -538,13 +538,13 @@ TaudiffMax = -1.0""" % self.norb
                     result_key = 'p2tau-worm'
                 else:
                     raise NotImplementedError
-                
+
                 self.GF_worm_components = []
 
                 # Not used but has to be created..
                 gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
                 gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
-                
+
                 # Required variables for the w2dynamics DMFT interface
                 iimp = 0
                 iter_no = 0
@@ -568,7 +568,7 @@ TaudiffMax = -1.0""" % self.norb
                 if mpi.rank == 0:
                     print(f'WormComponents = {cfg["QMC"]["WormComponents"]}')
                     print(f'WormComponentIndices = {components}')
-                                    
+
                 for component in components:
                     if mpi.rank == 0:
                         print('='*72)
@@ -578,7 +578,7 @@ TaudiffMax = -1.0""" % self.norb
                         print('='*72)
 
                     solver.set_problem(imp_problem)
-                    
+
                     solver.umatrix = U_ijkl
                     result_gen, result_comp = \
                         solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
@@ -595,13 +595,13 @@ TaudiffMax = -1.0""" % self.norb
 
                     gf_err = Gf(mesh=mesh, target_shape=[])
                     gf_err.data[:] = gf.stderr()
-                    
+
                     self.GF_worm_components.append((component, gf_mean, gf_err))
 
 
         # TRIQS/cthyb like interface to sample all components of the two-particle Green's function
         # not combinable with passing `cfg_qmc` options to the solver.
-        
+
         if measure_g4iw_ph and len(manual_cfg_qmc) == 0:
             # Set necessary configuration parameters for the solver
             # and construct a new one so the Fortran module also gets
@@ -693,7 +693,7 @@ TaudiffMax = -1.0""" % self.norb
                 self.G_iw[name].set_from_fourier(g, known_moments)
 
         ### add perturbation order as observable
-        #print 'measure_pert_order ', measure_pert_order 
+        #print 'measure_pert_order ', measure_pert_order
         if measure_pert_order:
             self.hist = result.other["hist"]
             #print 'hist.shape', hist.shape
@@ -707,12 +707,12 @@ TaudiffMax = -1.0""" % self.norb
            cfg["QMC"]["WormMeasP3iwPH"] == 1 or \
            cfg["QMC"]["WormMeasP2iwPH"] == 1 or \
            cfg["QMC"]["WormMeasP2tauPH"] == 1 :
-            
+
             if hasattr(self, 'result_gen'):
                 return result_gen, result_comp
             else:
                 return
-        
+
         if measure_G_tau:
             if hasattr(self, 'result_aux'):
                 return result_aux, result

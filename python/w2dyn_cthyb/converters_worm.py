@@ -17,29 +17,29 @@ from triqs.gf import Gf, MeshProduct, Idx
 
 from w2dyn.auxiliaries.compound_index import index2component_general
 
-    
+
 def g2_from_w2dyn_G2_worm_components(G2_worm_components, Nbands, so_tr=True):
 
     """Get TRIQS two-particle Green's function
     from W2Dynamics worm sampled components."""
-    
+
     _, g2, _ = G2_worm_components[0]
 
     fmesh, _, bmesh = g2.mesh.components
     mesh = MeshProduct(bmesh, fmesh, fmesh)
     beta = bmesh.beta
-    
+
     target_shape = tuple([2*Nbands]*4)
 
     G2 = Gf(mesh=mesh, target_shape=target_shape)
-    
+
     for index, g2_wwn, g2_wnn_err in G2_worm_components:
-        bs, b, s = index2component_general(Nbands, 4, index)        
-        i, j, k, l = [ int(x) for x in bs ]        
+        bs, b, s = index2component_general(Nbands, 4, index)
+        i, j, k, l = [ int(x) for x in bs ]
         G2[j, i, l, k].data[:] = beta * np.moveaxis(g2_wwn.data, -1, 0)
 
     if so_tr: G2 = transpose_rank4_gfs_from_orbspin_to_spinorb(G2)
-        
+
     return G2
 
 
@@ -53,14 +53,14 @@ def p3_from_w2dyn_P3_worm_components(P3_worm_components, Nbands, so_tr=True):
     fmesh, bmesh = p3.mesh.components
     mesh = MeshProduct(bmesh, fmesh)
     beta = bmesh.beta
-    
+
     target_shape = tuple([2*Nbands]*4)
 
     P3 = Gf(mesh=mesh, target_shape=target_shape)
-    
+
     for index, p3_wn, p3_wn_err in P3_worm_components:
-        bs, b, s = index2component_general(Nbands, 4, index)        
-        i, j, k, l = [ int(x) for x in bs ] 
+        bs, b, s = index2component_general(Nbands, 4, index)
+        i, j, k, l = [ int(x) for x in bs ]
         P3[j, i, l, k].data[:] = beta * np.moveaxis(p3_wn.data, -1, 0)
 
     if so_tr: P3 = transpose_rank4_gfs_from_orbspin_to_spinorb(P3)
@@ -78,14 +78,14 @@ def p2_from_w2dyn_P2_worm_components(P2_worm_components, Nbands, so_tr=True):
     bmesh = p2.mesh
     mesh = bmesh
     beta = bmesh.beta
-    
+
     target_shape = tuple([2*Nbands]*4)
 
     P2 = Gf(mesh=mesh, target_shape=target_shape)
-    
+
     for index, p2_w, p2_w_err in P2_worm_components:
-        bs, b, s = index2component_general(Nbands, 4, index)        
-        i, j, k, l = [ int(x) for x in bs ] 
+        bs, b, s = index2component_general(Nbands, 4, index)
+        i, j, k, l = [ int(x) for x in bs ]
         P2[j, i, l, k].data[:] = p2_w.data
 
     if so_tr: P2 = transpose_rank4_gfs_from_orbspin_to_spinorb(P2)
@@ -96,10 +96,10 @@ def p2_from_w2dyn_P2_worm_components(P2_worm_components, Nbands, so_tr=True):
 def p2_remove_disconnected(p2,Gtau):
 
     """Remove disconnected part of p2"""
-    
+
     p2_conn = p2.copy()
     beta = p2.mesh.beta
-    
+
     # Only at zero frequency
     p2_conn[Idx(0)] -= beta*np.einsum('ab,cd->abcd', Gtau(0), Gtau(0))
 
@@ -110,28 +110,28 @@ def p3_w2dyn_to_triqs_freq_shift(p3):
 
     """Perform a fermionic frequency shift passing from the W2Dynamics notation
     to the TRIQS/TPRF frequency convention. """
-    
+
     p3_new = Gf(mesh=p3.mesh, target_shape=p3.target_shape)
-    
+
     def in_mesh(nu):
         return p3.mesh[1].first_index() <= nu_shifted_index <= p3.mesh[1].last_index()
-        
+
     for omega,nu in p3.mesh:
         nu_shifted_index = nu.index - omega.index
         if not in_mesh(nu_shifted_index):
             continue
         p3_new[omega,Idx(nu_shifted_index)] = p3[omega,nu]
-    
+
     return p3_new
 
 
 def p3_w2dyn_to_triqs_freq_shift_alt(p3):
-    
+
     """Perform a fermionic frequency shift passing from the W2Dynamics notation
     to the TRIQS/TPRF frequency convention.
-    
+
     This alternative implementation uses the time-reversal symmetry of the action."""
-    
+
     p3_new = Gf(mesh=p3.mesh,target_shape=p3.target_shape)
     for omega,nu in p3.mesh:
         p3_new[Idx(-omega.index),nu] = np.einsum('abcd->badc',p3[omega,nu])
@@ -139,11 +139,11 @@ def p3_w2dyn_to_triqs_freq_shift_alt(p3):
 
 
 def L_from_g3(g3, G_w, return_chi0_inv=False):
-    
+
     """Construct the triangle vertex L from g3
 
     L = (g3 - \beta * G * G) (GG)^{-1}
-    
+
     by removing the disconnected part (\beta * G * G) from g3 and
     then amputating the fermionic legs with G, using (\chi_0^{-1} = (GG)^{-1})
     """
@@ -166,7 +166,7 @@ def L_from_g3(g3, G_w, return_chi0_inv=False):
     chi0_inv = inverse_PH(chi0_from_gg2_PH(G_w, tmp))
 
     # Amputate gg bubble
-    L = g3.copy() 
+    L = g3.copy()
     L.data[:] = np.einsum('wnefcd,wnnabfe->wnabcd', g3_conn.data, chi0_inv.data)
 
     if return_chi0_inv:
@@ -176,7 +176,7 @@ def L_from_g3(g3, G_w, return_chi0_inv=False):
 
 
 def transpose_rank4_gfs_from_orbspin_to_spinorb(g):
-    
+
     """ Rearrange tensor indices in A Greens function
     with rank 4 target space `len(g.target_shape) == 4`
     W2Dynamics orders orbital indices and then spin indices
@@ -184,7 +184,7 @@ def transpose_rank4_gfs_from_orbspin_to_spinorb(g):
     """
 
     data = g.data.copy()
-    
+
     s_pre, s_aaaa = data.shape[:-4], data.shape[-4:]
 
     na = s_aaaa[0]
