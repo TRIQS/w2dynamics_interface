@@ -37,11 +37,22 @@ class Solver():
     def __init__(self, beta, gf_struct, n_iw=1025, n_tau=10001, n_l=30, delta_interface=False, complex=False):
         """Constructor setting up response function parameters
 
-        Arguments:
-        beta : inverse temperature
-        gf_struct : Triqs Green's function block structure
-        n_iw : number of Matsubara frequencies
-        n_tau : number of imaginary time points
+        Parameters
+        ----------
+        beta : float
+            inverse temperature
+        gf_struct : list of tuples
+            Triqs Green's function block structure
+        n_iw : int
+            number of Matsubara frequencies
+        n_tau : int
+            number of imaginary time points
+        n_l : int
+            number of Legendre coefficients
+        delta_interface : bool, optional
+            Enable hybridization function interface. Default `False`.
+        complex : bool, optional
+            Enable complex valued impurity models. Default `False`.
         """
 
         self.constr_params = { "beta": beta, "gf_struct": gf_struct, "n_iw": n_iw,
@@ -66,13 +77,18 @@ class Solver():
     def solve(self, **params_kw):
         """Solve impurity model 
 
-        Arguments:
-        n_cycles : number of Monte Carlo cycles
-        n_warmup_cycles : number of warmub Monte Carlo cycles
-        length_cycle : number of proposed moves per cycle
-        h_int : interaction Hamiltonian as a quartic triqs operator
-        h_0 : quadratic part of the local Hamiltonian
-              (only required if delta_interface=true has been specified during construction)
+        Parameters
+        ----------
+        n_cycles : int
+            number of Monte Carlo cycles
+        n_warmup_cycles : int
+            number of warmup Monte Carlo cycles
+        length_cycle : int
+            number of proposed moves per cycle
+        h_int : triqs.operators.Operator
+            quartic local interaction Hamiltonian
+        h_0 : triqs.operators.Operator, optional
+            quadratic part of the local Hamiltonian, required when `delta_interface=True`.
         cfg_qmc : (optional) dictionary for passing parameters to W2Dynamics solver manually
         """
 
