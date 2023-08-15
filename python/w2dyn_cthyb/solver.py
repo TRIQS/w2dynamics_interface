@@ -73,6 +73,7 @@ class Solver():
         h_int : interaction Hamiltonian as a quartic triqs operator
         h_0 : quadratic part of the local Hamiltonian
               (only required if delta_interface=true has been specified during construction)
+        cfg_qmc : (optional) dictionary for passing parameters to W2Dynamics solver manually
         """
 
         n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
@@ -126,6 +127,7 @@ class Solver():
             self.Delta_tau = BlockGf(mesh=self.tau_mesh, gf_struct=self.gf_struct)
             self.Delta_tau << Fourier(Delta_iw)
 
+            # -- Dissable this check to enable multi-orbital calculations
             #assert len(t_ij_lst) in set([1, 2, 4]), \
             #      "For now t_ij_lst must not contain more than 4 blocks; generalize it!"
             t_ij_matrix = block_diag(*t_ij_lst)
@@ -235,11 +237,13 @@ TaudiffMax = -1.0""" % self.norb
         else:
             cfg["QMC"]["statesampling"] = 0
 
-        #if worm:
-        if False:
-            cfg["QMC"]["WormMeasGiw"] = 1
-            cfg["QMC"]["WormMeasGtau"] = 1
-            cfg["QMC"]["WormSearchEta"] = 1
+        if worm:
+
+            # Do not enable measurements if cfg_qmc is supplied in the solve call
+            if 'cfg_qmc' in params_kw:
+                cfg["QMC"]["WormMeasGiw"] = 1
+                cfg["QMC"]["WormMeasGtau"] = 1
+                cfg["QMC"]["WormSearchEta"] = 1
 
             ### set worm parameters to some default values if not set by user
             if percentageworminsert != 0.0:
@@ -251,6 +255,12 @@ TaudiffMax = -1.0""" % self.norb
             else:
                 cfg["QMC"]["PercentageWormReplace"] = 0.2
 
+        ### Manually supplied cfg paramters using dictionary cfg_qmc
+        manual_cfg_qmc = params_kw.pop("cfg_qmc", {})
+        for key, value in manual_cfg_qmc.items():
+            cfg["QMC"][key] = value
+            if mpi.rank == 0: print(f'cfg["QMC"][{key}] = {value}')
+
         if mpi.rank == 0:
             print(' ')
             print('specifications for w2dyn:')
@@ -258,12 +268,6 @@ TaudiffMax = -1.0""" % self.norb
             print('cfg["QMC"]["Percentage4OperatorMove"] ',  cfg["QMC"]["Percentage4OperatorMove"])
             print('cfg["QMC"]["flavourchange_moves"] ',  cfg["QMC"]["flavourchange_moves"])
             print('cfg["QMC"]["statesampling"] ', cfg["QMC"]["statesampling"])
-
-        ### Manually supplied cfg paramters
-        manual_cfg_qmc = params_kw.pop("cfg_qmc", {})
-        for key, value in manual_cfg_qmc.items():
-            cfg["QMC"][key] = value
-            if mpi.rank == 0: print(f'cfg["QMC"][{key}] = {value}')
 
         if mpi.rank == 0:
             for header, section in cfg.items():
@@ -543,7 +547,6 @@ TaudiffMax = -1.0""" % self.norb
                         print('='*72)
                         print('='*72)
 
-                    #solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
                     solver.set_problem(imp_problem)
                     
                     solver.umatrix = U_ijkl
