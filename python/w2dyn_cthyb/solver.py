@@ -160,6 +160,7 @@ class Solver():
             #assert len(t_ij_lst) in set([1, 2, 4]), \
             #      "For now t_ij_lst must not contain more than 4 blocks; generalize it!"
             t_ij_matrix = block_diag(*t_ij_lst)
+            self.Delta_infty = t_ij_lst
 
         # in w2dyn Delta is a hole propagator
         for bl, Delta_bl in self.Delta_tau:
