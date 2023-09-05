@@ -431,7 +431,7 @@ TaudiffMax = -1.0""" % self.norb
                     # one local sample (should not happen)
                     gtau[0, b1, s1, b2, s2, :] = np.mean(result.other[gtau_name],
                                                            axis=0)
-                    gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
             elif cfg["QMC"]["FourPnt"] == 8: # Know that: worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
