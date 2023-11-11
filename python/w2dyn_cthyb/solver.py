@@ -108,7 +108,8 @@ class Solver():
         n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
         n_warmup_cycles = params_kw.pop("n_warmup_cycles", 5000) ### default
         max_time = params_kw.pop("max_time", -1)
-        worm = params_kw.pop("worm", False)
+        selfenergy = params_kw.pop("selfenergy", "dyson")
+        worm = params_kw.pop("worm", selfenergy in ["improved_worm", "symmetric_improved_worm"]) # Improved estimators imply worm sampling
         percentageworminsert = params_kw.pop("PercentageWormInsert", 0.20)
         percentagewormreplace = params_kw.pop("PercentageWormReplace", 0.20)
         wormcomponents = params_kw.pop("worm_components", None)
@@ -247,8 +248,10 @@ TaudiffMax = -1.0""" % self.norb
         ### in a more sophisticated way
 
         cfg["General"]["beta"] = self.beta
-        cfg["General"]["SelfEnergy"] = "dyson"
         cfg["General"]["siw_moments"] = "estimate"
+        cfg["General"]["SelfEnergy"] = selfenergy
+        if selfenergy in ["improved_worm", "symmetric_improved_worm"]:
+            cfg["FTType"] = "none_worm"
         cfg["QMC"]["Niw"] = self.n_iw
         cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
 
@@ -276,6 +279,10 @@ TaudiffMax = -1.0""" % self.norb
                 cfg["QMC"]["WormMeasGiw"] = 1
                 cfg["QMC"]["WormMeasGtau"] = 1
                 cfg["QMC"]["WormSearchEta"] = 1
+                if selfenergy == "improved_worm":
+                    cfg["QMC"]["WormMeasGSigmaiw"] = 1
+                if selfenergy == "symmetric_improved_worm":
+                    cfg["QMC"]["WormMeasQQ"] = 1
 
             ### set worm parameters to some default values if not set by user
             if percentageworminsert != 0.0:
