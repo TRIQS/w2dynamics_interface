@@ -1,17 +1,3 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 67ecb0b..8eea51d 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -180,6 +180,9 @@ SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB})
- ADD_SUBDIRECTORY(${SRCMTRNG} ${LIB})
-
- # The source for the ctqmc binary and have it placed in the bin folder
-+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-+  set(F2PY_ENV CFLAGS=-Wno-error=incompatible-function-pointer-types)
-+endif()
- ADD_SUBDIRECTORY(${SRCCTQMC})
- ADD_SUBDIRECTORY(${SRCMAXENT})
-
 diff --git a/cmake/Modules/SetFortranFlags.cmake b/cmake/Modules/SetFortranFlags.cmake
 index caab7fc..264978a 100644
 --- a/cmake/Modules/SetFortranFlags.cmake
@@ -29,29 +15,3 @@ index caab7fc..264978a 100644
  
  #The following does not seem to get added...
  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-diff --git a/src/ctqmc_fortran/CMakeLists.txt b/src/ctqmc_fortran/CMakeLists.txt
-index 44f66a3..2f9ae07 100644
---- a/src/ctqmc_fortran/CMakeLists.txt
-+++ b/src/ctqmc_fortran/CMakeLists.txt
-@@ -92,7 +92,7 @@ endif (USE_NFFT)
-   # output will be a shared library that can be imported by python.
-   add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_name}${F2PY_SUFFIX}"
-     COMMAND ${CMAKE_COMMAND} -E copy "${SRCCTQMC}/.f2py_f2cmap" "${CMAKE_CURRENT_BINARY_DIR}/.f2py_f2cmap"
--    COMMAND ${PYTHON_EXECUTABLE} -m numpy.f2py -c $<$<CONFIG:RELEASE>:--quiet> -m ${_name}
-+    COMMAND ${F2PY_ENV} ${PYTHON_EXECUTABLE} -m numpy.f2py -c $<$<CONFIG:RELEASE>:--quiet> -m ${_name}
-       --build-dir "${CMAKE_Fortran_MODULE_DIRECTORY}"
-       ${_fcompiler_opts}
-       ${LIB}/libmtrng.a
-diff --git a/src/maxent/CMakeLists.txt b/src/maxent/CMakeLists.txt
-index cd17611..aa242c4 100644
---- a/src/maxent/CMakeLists.txt
-+++ b/src/maxent/CMakeLists.txt
-@@ -69,7 +69,7 @@ set(EXTERNAL_LIBRARIES ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-   set(ADDITIONAL_OPTS -fPIC -DLAPACK77_Interface)
-     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_name}${F2PY_SUFFIX}"
-       COMMAND ${CMAKE_COMMAND} -E copy "${SRCMAXENT}/.f2py_f2cmap" "${CMAKE_CURRENT_BINARY_DIR}/.f2py_f2cmap"
--      COMMAND ${PYTHON_EXECUTABLE} -m numpy.f2py -c $<$<CONFIG:RELEASE>:--quiet> -m ${_name}
-+      COMMAND ${F2PY_ENV} ${PYTHON_EXECUTABLE} -m numpy.f2py -c $<$<CONFIG:RELEASE>:--quiet> -m ${_name}
-         --build-dir "${CMAKE_Fortran_MODULE_DIRECTORY}"
-         ${_fcompiler_opts} --opt="${ADDITIONAL_OPTS}" ${_inc_opts}
-         ${EXTERNAL_LIBRARIES}

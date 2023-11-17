@@ -61,6 +61,12 @@ jobs:
         python3-sphinx
         python3-nbsphinx
 
+    - name: Set up Python
+      if: matrix.os == 'macos-12'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11' # 3.12 removed distutils
+
     - name: Install homebrew dependencies
       if: matrix.os == 'macos-12'
       run: |
@@ -71,11 +77,6 @@ jobs:
         echo "FC=gfortran-13" >> $GITHUB_ENV
         echo "BLAS_ROOT=$(brew --prefix)/opt/openblas" >> $GITHUB_ENV
         echo "LAPACK_ROOT=$(brew --prefix)/opt/openblas" >> $GITHUB_ENV
-
-    - name: add clang cxxflags
-      if: ${{ contains(matrix.cxx, 'clang') }}
-      run:
-        echo "CXXFLAGS=-stdlib=libc++" >> $GITHUB_ENV
 
     - name: add clang cxxflags
       if: ${{ contains(matrix.cxx, 'clang') }}
