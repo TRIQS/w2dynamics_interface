@@ -45,8 +45,15 @@ def g2_from_w2dyn_G2_worm_components(G2_worm_components, Nbands, so_tr=True):
 
 def p3_from_w2dyn_P3_worm_components(P3_worm_components, Nbands, so_tr=True):
 
-    """Get TRIQS three-point Green's function
-    from W2Dynamics worm sampled components."""
+    """Get TRIQS three-point Green's function from W2Dynamics worm sampled components.
+
+    so_tr == True:
+        Converts from orbital-spin to spin-orbital order of single particle index.
+
+    The four indices P_{ijkl} are permuted in pairs i <-> j, k <-> l.
+
+    The order of the bosonic and fermionic grids are permuted.
+    """
 
     _, p3, _ = P3_worm_components[0]
 
@@ -101,28 +108,29 @@ def p2_remove_disconnected(p2,Gtau):
     beta = p2.mesh.beta
 
     # Only at zero frequency
-    p2_conn[Idx(0)] -= beta*np.einsum('ab,cd->abcd', Gtau(0), Gtau(0))
+    p2_conn[Idx(0)] -= beta*np.einsum('ab,cd->abcd', Gtau(0), Gtau(0)) # Transpose bug?
 
     return p2_conn
 
 
 def p3_w2dyn_to_triqs_freq_shift(p3):
+    return p3_w2dyn_to_triqs_freq_shift_conj_sym(p3)
 
-    """Perform a fermionic frequency shift passing from the W2Dynamics notation
-    to the TRIQS/TPRF frequency convention. """
 
-    p3_new = Gf(mesh=p3.mesh, target_shape=p3.target_shape)
+def p3_w2dyn_to_triqs_freq_shift_conj_sym(p3):
+    """ Use complex conjugated relation between Triqs and W2Dynamics formats
 
-    def in_mesh(nu):
-        return p3.mesh[1].first_index() <= nu_shifted_index <= p3.mesh[1].last_index()
+    How do we motivate the index permutation?
 
-    for omega,nu in p3.mesh:
-        nu_shifted_index = nu.index - omega.index
-        if not in_mesh(nu_shifted_index):
-            continue
-        p3_new[omega,Idx(nu_shifted_index)] = p3[omega,nu]
+    We do it twice for fun...
+    - Once in the worm_components to Triqs container conversion, and
+    - once in the frequency converter here.
 
-    return p3_new
+    """
+    p3_conj = Gf(mesh=p3.mesh, target_shape=p3.target_shape)
+    for w, n in p3.mesh:
+        p3_conj[w, n] = np.einsum('abcd->badc', np.conj(p3[w, -n]))
+    return p3_conj
 
 
 def p3_w2dyn_to_triqs_freq_shift_alt(p3):
@@ -132,7 +140,7 @@ def p3_w2dyn_to_triqs_freq_shift_alt(p3):
 
     This alternative implementation uses the time-reversal symmetry of the action."""
 
-    p3_new = Gf(mesh=p3.mesh,target_shape=p3.target_shape)
+    p3_new = Gf(mesh=p3.mesh, target_shape=p3.target_shape)
     for omega,nu in p3.mesh:
         p3_new[Idx(-omega.index),nu] = np.einsum('abcd->badc',p3[omega,nu])
     return p3_new
