@@ -86,7 +86,7 @@ ExternalProject_Add(w2dynamics
              -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
              -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
   INSTALL_COMMAND ""
-  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} checkout . && ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
+  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} checkout . && ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch ${PROJECT_SOURCE_DIR}/0001-Replacement-move-for-singly-improved-estimator.patch ${PROJECT_SOURCE_DIR}/0002-Replace-move-for-P3-and-P3pp-equal-time-object.patch ${PROJECT_SOURCE_DIR}/0003-Replacement-move-for-P2-P2pp.patch
 )
 
 set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dynamics)
