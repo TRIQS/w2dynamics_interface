@@ -67,7 +67,7 @@ message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
 
 # --- Define the w2dynamics interface version numbers and get the git hash
-set(W2DYN_GIT_HASH b5a2bcc9ecdb694703a4e683b63352bedf116882)
+set(W2DYN_GIT_HASH f2d54372a987c6819891ae18dfb234b6fbdc807a)
 message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
 
 # --- Build w2dynamics as an external project
@@ -76,8 +76,7 @@ get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES
 include(ExternalProject)
 ExternalProject_Add(w2dynamics
   PREFIX w2dyn_project
-  #GIT_REPOSITORY https://github.com/w2dynamics/w2dynamics
-  GIT_REPOSITORY https://github.com/the-hampel/w2dynamics
+  GIT_REPOSITORY https://github.com/w2dynamics/w2dynamics
   GIT_TAG ${W2DYN_GIT_HASH}
   GIT_CONFIG advice.detachedHead=false
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
