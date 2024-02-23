@@ -4,3 +4,6 @@ numpy>=1.18
 scipy>=1.4
 h5py
 configobj
+meson
+setuptools
+ninja
