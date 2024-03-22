@@ -1,11 +1,11 @@
 easyblock = 'CMakeMake'
 
 name = 'TRIQS-w2dynamics_interface'
-version = '3.2.0'
+version = '@PROJECT_VERSION@'
 
 homepage = 'https://triqs.github.io/w2dynamics_interface/'
 description = """
- PROVIDE HERE A DESCRIPTION OF YOUR APPLICATION
+ TRIQS Interface to the w2dynamics Code 
 """
 
 docurls = ['https://triqs.github.io/w2dynamics_interface/%(version_major_minor)s.x/']
@@ -40,8 +40,7 @@ separate_build_dir = True
 runtest = 'test'
 
 sanity_check_paths = {
-    'files': ['lib/libw2dynamics_interface_c.a'],
-    'dirs': ['include/w2dynamics_interface', 'lib', 'share',
+    'dirs': ['lib', 'share',
              'lib/python%(pyshortver)s/site-packages/w2dynamics_interface'],
 }
 
