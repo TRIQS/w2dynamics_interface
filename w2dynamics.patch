@@ -1,57 +1,98 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 67ecb0b..8eea51d 100644
+index 24a3f3b..a700037 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -180,6 +180,9 @@ SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB})
- ADD_SUBDIRECTORY(${SRCMTRNG} ${LIB})
-
- # The source for the ctqmc binary and have it placed in the bin folder
-+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-+  set(F2PY_ENV CFLAGS=-Wno-error=incompatible-function-pointer-types)
-+endif()
- ADD_SUBDIRECTORY(${SRCCTQMC})
- ADD_SUBDIRECTORY(${SRCMAXENT})
-
-diff --git a/cmake/Modules/SetFortranFlags.cmake b/cmake/Modules/SetFortranFlags.cmake
-index caab7fc..264978a 100644
---- a/cmake/Modules/SetFortranFlags.cmake
-+++ b/cmake/Modules/SetFortranFlags.cmake
-@@ -55,12 +55,6 @@ ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fort
- #SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
- #                 Fortran "-fno-underscoring")
+@@ -14,7 +14,7 @@ endif(POLICY CMP0074)
+ SET(VERSION 1.0)
  
--# There is some bug where -march=native doesn't work on Mac
--IF(APPLE)
--    SET(GNUNATIVE "-mtune=native")
--ELSE()
--    SET(GNUNATIVE "-march=native")
--ENDIF()
+ # Set the module path, so that CMake also considers our modules
+-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
++SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules/")
  
- #The following does not seem to get added...
- SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+ # Uncomment if it is required that Fortran 90 is supported
+ IF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
+@@ -106,7 +106,7 @@ ENDIF()
+ 
+ find_package(
+   Python
+-  COMPONENTS Interpreter Development.Module NumPy
++  COMPONENTS Interpreter Development NumPy
+   REQUIRED)
+ 
+ # F2PY headers
+@@ -187,9 +187,9 @@ endif()
+ SET(CTQMCEXE ctqmc)
+ 
+ # Define some directories
+-SET(SRC ${CMAKE_SOURCE_DIR}/src)
++SET(SRC ${PROJECT_SOURCE_DIR}/src)
+ SET(LIB ${CMAKE_CURRENT_BINARY_DIR}/lib)
+-#SET(BIN ${CMAKE_SOURCE_DIR}/bin)
++#SET(BIN ${PROJECT_SOURCE_DIR}/bin)
+ 
+ SET(SRCCTQMC ${SRC}/ctqmc_fortran)
+ SET(SRCMAXENT ${SRC}/maxent)
+@@ -207,7 +207,7 @@ ADD_SUBDIRECTORY(${SRCMAXENT})
+ 
+ # Add a distclean target to the Makefile
+ ADD_CUSTOM_TARGET(distclean 
+-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/distclean.cmake
++    COMMAND ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/distclean.cmake
+ )
+ 
+ ADD_SUBDIRECTORY(testsuite/mtrng.tests)
+diff --git a/PyCompileall.txt b/PyCompileall.txt
+index 329c877..5548224 100644
+--- a/PyCompileall.txt
++++ b/PyCompileall.txt
+@@ -1,7 +1,7 @@
+ if (PYTHON_VERSION_MAJOR GREATER 2)
+   execute_process(COMMAND
+-    ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_SOURCE_DIR}/w2dyn)
++    ${PYTHON_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR}/w2dyn)
+ else ()
+   execute_process(COMMAND
+-    ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/testsuite/w2dyn.tests/compileall.py ${CMAKE_SOURCE_DIR}/w2dyn)
++    ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/testsuite/w2dyn.tests/compileall.py ${PROJECT_SOURCE_DIR}/w2dyn)
+ endif()
 diff --git a/src/ctqmc_fortran/CMakeLists.txt b/src/ctqmc_fortran/CMakeLists.txt
-index 44f66a3..2f9ae07 100644
+index 9eed7fd..0471f73 100644
 --- a/src/ctqmc_fortran/CMakeLists.txt
 +++ b/src/ctqmc_fortran/CMakeLists.txt
-@@ -92,7 +92,7 @@ endif (USE_NFFT)
-   # output will be a shared library that can be imported by python.
-   add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_name}${F2PY_SUFFIX}"
-     COMMAND ${CMAKE_COMMAND} -E copy "${SRCCTQMC}/.f2py_f2cmap" "${CMAKE_CURRENT_BINARY_DIR}/.f2py_f2cmap"
--    COMMAND ${PYTHON_EXECUTABLE} -m numpy.f2py -c $<$<CONFIG:RELEASE>:--quiet> -m ${_name}
-+    COMMAND ${F2PY_ENV} ${PYTHON_EXECUTABLE} -m numpy.f2py -c $<$<CONFIG:RELEASE>:--quiet> -m ${_name}
-       --build-dir "${CMAKE_Fortran_MODULE_DIRECTORY}"
-       ${_fcompiler_opts}
-       ${LIB}/libmtrng.a
+@@ -68,7 +68,7 @@ endif (USE_NFFT)
+     COMPILE_OPTIONS $<$<AND:$<C_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>>:-Wno-error=incompatible-function-pointer-types>)
+   target_link_libraries(${_name} PRIVATE fortranobject CTQMCLIB ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${FFTW_LIBRARIES} $<$<BOOL:${USE_NFFT}>:nfft>)
+   add_custom_command(TARGET ${_name} POST_BUILD
+-    COMMAND ${CMAKE_COMMAND} -E copy -t "${CMAKE_SOURCE_DIR}/w2dyn/auxiliaries" $<TARGET_FILE:${_name}>
++    COMMAND cp $<TARGET_FILE:${_name}> ${PROJECT_SOURCE_DIR}/w2dyn/auxiliaries/
+     COMMAND_EXPAND_LISTS)
+ 
+ IF(WIN32)
 diff --git a/src/maxent/CMakeLists.txt b/src/maxent/CMakeLists.txt
-index cd17611..aa242c4 100644
+index c8e59ce..b1e8866 100644
 --- a/src/maxent/CMakeLists.txt
 +++ b/src/maxent/CMakeLists.txt
-@@ -69,7 +69,7 @@ set(EXTERNAL_LIBRARIES ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-   set(ADDITIONAL_OPTS -fPIC -DLAPACK77_Interface)
-     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_name}${F2PY_SUFFIX}"
-       COMMAND ${CMAKE_COMMAND} -E copy "${SRCMAXENT}/.f2py_f2cmap" "${CMAKE_CURRENT_BINARY_DIR}/.f2py_f2cmap"
--      COMMAND ${PYTHON_EXECUTABLE} -m numpy.f2py -c $<$<CONFIG:RELEASE>:--quiet> -m ${_name}
-+      COMMAND ${F2PY_ENV} ${PYTHON_EXECUTABLE} -m numpy.f2py -c $<$<CONFIG:RELEASE>:--quiet> -m ${_name}
-         --build-dir "${CMAKE_Fortran_MODULE_DIRECTORY}"
-         ${_fcompiler_opts} --opt="${ADDITIONAL_OPTS}" ${_inc_opts}
-         ${EXTERNAL_LIBRARIES}
+@@ -53,7 +53,7 @@ set_target_properties(MAXENTLIB PROPERTIES COMPILE_FLAGS "-DLAPACK77_Interface")
+     COMPILE_OPTIONS $<$<AND:$<C_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>>:-Wno-error=incompatible-function-pointer-types>)
+   target_link_libraries(${_name} PRIVATE fortranobject MAXENTLIB ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+   add_custom_command(TARGET ${_name} POST_BUILD
+-    COMMAND ${CMAKE_COMMAND} -E copy -t "${CMAKE_SOURCE_DIR}/w2dyn/maxent" $<TARGET_FILE:${_name}>
++    COMMAND cp $<TARGET_FILE:${_name}> ${PROJECT_SOURCE_DIR}/w2dyn/maxent/
+     COMMAND_EXPAND_LISTS)
+ 
+ #####################################
+diff --git a/testsuite/w2dyn.tests/CMakeLists.txt b/testsuite/w2dyn.tests/CMakeLists.txt
+index 89d789c..d1c3ea5 100644
+--- a/testsuite/w2dyn.tests/CMakeLists.txt
++++ b/testsuite/w2dyn.tests/CMakeLists.txt
+@@ -5,8 +5,8 @@ find_package(PythonInterp REQUIRED)
+ enable_testing()
+ if (PYTHON_VERSION_MAJOR GREATER 2)
+   add_test(NAME 1-syntax_check
+-    COMMAND ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_SOURCE_DIR})
++    COMMAND ${PYTHON_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR})
+ else ()
+   add_test(NAME 1-syntax_check
+-    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/compileall.py ${CMAKE_SOURCE_DIR})
++    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/compileall.py ${PROJECT_SOURCE_DIR})
+ endif()
