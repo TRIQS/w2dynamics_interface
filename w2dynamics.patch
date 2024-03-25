@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 24a3f3b..a700037 100644
+index 24a3f3b..2899d85 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -14,7 +14,7 @@ endif(POLICY CMP0074)
@@ -11,8 +11,42 @@ index 24a3f3b..a700037 100644
  
  # Uncomment if it is required that Fortran 90 is supported
  IF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
-@@ -106,7 +106,7 @@ ENDIF()
+@@ -52,15 +52,6 @@ SET( CMAKE_Fortran_FLAGS             "${CMAKE_Fortran_FLAGS} -DLAPACK77_Interfac
+ # Define the actual files and folders that make up the build
+ ############################################################
  
+-find_package(PythonInterp 3.0)
+-if (NOT PYTHONINTERP_FOUND)
+-  find_package(PythonInterp 2.6)
+-endif()
+-find_package(PackageHandleStandardArgs)
+-
+-
+-INCLUDE(${CMAKE_MODULE_PATH}/installviapip.cmake)
+-
+ option(USE_NFFT "Compile with support for routines requiring the NFFT library for non-equispaced FFTs" ON)
+ 
+ if (USE_NFFT)
+@@ -88,30 +79,14 @@ else ()
+   set(NFFT_LIBRARIES "")
+ endif ()
+ 
+-find_package(NUMPY 1.10)
+-IF(NOT NUMPY_FOUND)
+-    install_via_pip("numpy>=1.10.0" ERRORCODE)
+-    if (${ERRORCODE})
+-    MESSAGE(FATAL_ERROR "Couldn't install numpy -> ABORTING!!!")
+-    endif()
+-    install_via_pip("setuptools" ERRORCODE)
+-    if (${ERRORCODE})
+-    MESSAGE(FATAL_ERROR "Couldn't install setuptools -> ABORTING!!!")
+-    endif()
+-    install_via_pip("meson" ERRORCODE)
+-    if (${ERRORCODE})
+-    MESSAGE(FATAL_ERROR "Couldn't install meson -> ABORTING!!!")
+-    endif()
+-ENDIF()
+-
  find_package(
    Python
 -  COMPONENTS Interpreter Development.Module NumPy
@@ -20,7 +54,65 @@ index 24a3f3b..a700037 100644
    REQUIRED)
  
  # F2PY headers
-@@ -187,9 +187,9 @@ endif()
+ execute_process(
+-  COMMAND "${PYTHON_EXECUTABLE}" -c
++  COMMAND "${Python_EXECUTABLE}" -c
+           "import numpy.f2py; print(numpy.f2py.get_include())"
+   OUTPUT_VARIABLE F2PY_INCLUDE_DIR
+   OUTPUT_STRIP_TRAILING_WHITESPACE)
+@@ -121,7 +96,7 @@ target_link_libraries(fortranobject PUBLIC Python::NumPy)
+ target_include_directories(fortranobject PUBLIC "${F2PY_INCLUDE_DIR}")
+ set_property(TARGET fortranobject PROPERTY POSITION_INDEPENDENT_CODE ON)
+ 
+-find_package(H5PY)
++find_package(H5PY REQUIRED)
+ find_package(HDF5 1.6 COMPONENTS Fortran)# enforce the availability of the Fortran bindings. FIXME: Test on a suitable computer
+ 
+ if((NOT H5PY_FOUND) AND (NOT HDF5_FOUND))
+@@ -147,49 +122,17 @@ include(ExternalProject)
+     find_package(HDF5 1.6 COMPONENTS Fortran)
+ endif()
+ 
+-find_package(MPI4PY)
+-find_package(SCIPY 0.10)
+-IF(NOT SCIPY_FOUND)
+-    install_via_pip("scipy" ERRORCODE)
+-    if (${ERRORCODE})
+-    MESSAGE(FATAL_ERROR "Couldn't install scipy -> ABORTING!!!")
+-    endif()
+-ENDIF()
+-find_package(CONFIGOBJ)
+-if(NOT H5PY_FOUND)
+-    install_via_pip("h5py" ERRORCODE)
+-    if (${ERRORCODE})
+-    MESSAGE(FATAL_ERROR "Couldn't install H5PY -> ABORTING!!!")
+-    endif()
+-endif()
+-if(NUMPY_VERSION VERSION_GREATER "1.17.99" AND SCIPY_VERSION VERSION_LESS "1.0.0")
+-    # automatic installation of h5py via pip can also pull in quite
+-    # new versions of numpy as dependencies...
+-    install_via_pip("scipy>=1.0.0" ERRORCODE)
+-    if (${ERRORCODE})
+-      message(WARNING "Your versions of numpy and scipy are incompatible and updating scipy automatically failed. You will not be able to run w2dynamics before updating scipy.")
+-    endif()
+-endif()
+-if(NOT MPI4PY_FOUND AND MPI_Fortran_FOUND)
+-    install_via_pip("mpi4py" ERRORCODE)
+-    if (${ERRORCODE})
+-    MESSAGE(FATAL_ERROR "Couldn't install MPI4PY -> ABORTING!!!")
+-    endif()
+-endif()
+-if(NOT CONFIGOBJ_FOUND)
+-    install_via_pip("configobj" ERRORCODE)
+-    if (${ERRORCODE})
+-    MESSAGE(FATAL_ERROR "Couldn't install configobj(required for DMFT.py) -> ABORTING!!!")
+-    endif()
+-endif()
++find_package(MPI4PY REQUIRED)
++find_package(SCIPY 0.10 REQUIRED)
++find_package(CONFIGOBJ REQUIRED)
+ 
+ # Define the executable name
  SET(CTQMCEXE ctqmc)
  
  # Define some directories
@@ -32,7 +124,7 @@ index 24a3f3b..a700037 100644
  
  SET(SRCCTQMC ${SRC}/ctqmc_fortran)
  SET(SRCMAXENT ${SRC}/maxent)
-@@ -207,7 +207,7 @@ ADD_SUBDIRECTORY(${SRCMAXENT})
+@@ -207,7 +150,7 @@ ADD_SUBDIRECTORY(${SRCMAXENT})
  
  # Add a distclean target to the Makefile
  ADD_CUSTOM_TARGET(distclean 
@@ -41,20 +133,269 @@ index 24a3f3b..a700037 100644
  )
  
  ADD_SUBDIRECTORY(testsuite/mtrng.tests)
+@@ -227,7 +170,7 @@ message(STATUS "Installing executables DMFT.py, cthyb, Maxent.py, hgrep (option
+ 
+ install(SCRIPT PyCompileall.txt)
+ install(DIRECTORY w2dyn
+-  DESTINATION lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
++  DESTINATION lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages
+   COMPONENT Python_Package)
+ if(INSTALL_EXECUTABLES)
+   install(PROGRAMS DMFT.py cthyb hgrep Maxent.py
 diff --git a/PyCompileall.txt b/PyCompileall.txt
-index 329c877..5548224 100644
+index 329c877..1fd5532 100644
 --- a/PyCompileall.txt
 +++ b/PyCompileall.txt
 @@ -1,7 +1,7 @@
- if (PYTHON_VERSION_MAJOR GREATER 2)
+-if (PYTHON_VERSION_MAJOR GREATER 2)
++if (Python_VERSION_MAJOR GREATER 2)
    execute_process(COMMAND
 -    ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_SOURCE_DIR}/w2dyn)
-+    ${PYTHON_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR}/w2dyn)
++    ${Python_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR}/w2dyn)
  else ()
    execute_process(COMMAND
 -    ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/testsuite/w2dyn.tests/compileall.py ${CMAKE_SOURCE_DIR}/w2dyn)
-+    ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/testsuite/w2dyn.tests/compileall.py ${PROJECT_SOURCE_DIR}/w2dyn)
++    ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/testsuite/w2dyn.tests/compileall.py ${PROJECT_SOURCE_DIR}/w2dyn)
  endif()
+diff --git a/cmake/Modules/FindCONFIGOBJ.cmake b/cmake/Modules/FindCONFIGOBJ.cmake
+index 4f4a9ee..59a81bc 100644
+--- a/cmake/Modules/FindCONFIGOBJ.cmake
++++ b/cmake/Modules/FindCONFIGOBJ.cmake
+@@ -10,17 +10,17 @@
+ 
+ # Finding ConfigObj involves calling the Python interpreter
+ #Check wether we have already searched the Python interpreter
+-if(NOT PYTHONINTERP_FOUND)
+-    find_package(PythonInterp REQUIRED)
++if(NOT Python_FOUND)
++    find_package(Python REQUIRED)
+ endif()
+ 
+   execute_process(COMMAND
+-      "${PYTHON_EXECUTABLE}" "-c" "exec(\"try:\\n import configobj;\\n print(configobj.__version__);\\nexcept:\\n exit(1)\")"
++      "${Python_EXECUTABLE}" "-c" "exec(\"try:\\n import configobj;\\n print(configobj.__version__);\\nexcept:\\n exit(1)\")"
+       OUTPUT_VARIABLE CONFIGOBJ_VERSION
+       RESULT_VARIABLE CONFIGOBJ_COMMAND_RESULT
+       OUTPUT_STRIP_TRAILING_WHITESPACE)
+ 
+-if(NOT CONFIGOBJ_FOUND AND PYTHONINTERP_FOUND)
++if(NOT CONFIGOBJ_FOUND AND Python_FOUND)
+ #    if(NOT CONFIGOBJ_COMMAND_RESULT MATCHES 0)
+ #        message("ConfigObj import failure:\n${_H5PY_ERROR_VALUE}")
+ #    endif()
+@@ -35,7 +35,7 @@ if(NOT CONFIGOBJ_FOUND AND PYTHONINTERP_FOUND)
+         math(EXPR CONFIGOBJ_VERSION_DECIMAL
+             "(${CONFIGOBJ_VERSION_MAJOR} * 10000) + (${CONFIGOBJ_VERSION_MINOR} * 100) + ${CONFIGOBJ_VERSION_PATCH}")
+     endif(CONFIGOBJ_COMMAND_RESULT MATCHES 0)
+-endif(NOT CONFIGOBJ_FOUND AND PYTHONINTERP_FOUND)
++endif(NOT CONFIGOBJ_FOUND AND Python_FOUND)
+ 
+ find_package_handle_standard_args(  CONFIGOBJ
+                                     REQUIRED_VARS CONFIGOBJ_VERSION
+diff --git a/cmake/Modules/FindH5PY.cmake b/cmake/Modules/FindH5PY.cmake
+index 34ddcdd..2ddedb9 100644
+--- a/cmake/Modules/FindH5PY.cmake
++++ b/cmake/Modules/FindH5PY.cmake
+@@ -11,13 +11,13 @@
+ 
+ # Finding H5Py involves calling the Python interpreter
+ #Check wether we have already searched the Python interpreter
+-if(NOT PYTHONINTERP_FOUND)
+-    find_package(PythonInterp REQUIRED)
++if(NOT Python_FOUND)
++    find_package(Python REQUIRED)
+ endif()
+ 
+-if(NOT H5PY_FOUND AND PYTHONINTERP_FOUND)
++if(NOT H5PY_FOUND AND Python_FOUND)
+     execute_process(COMMAND
+-      "${PYTHON_EXECUTABLE}" "-c" "exec(\"try:\\n import h5py;\\n print(h5py.version.version);\\nexcept:\\n exit(1)\")"
++      "${Python_EXECUTABLE}" "-c" "exec(\"try:\\n import h5py;\\n print(h5py.version.version);\\nexcept:\\n exit(1)\")"
+       OUTPUT_VARIABLE _H5PY_VALUES
+       RESULT_VARIABLE H5PY_COMMAND_RESULT
+       OUTPUT_STRIP_TRAILING_WHITESPACE)
+@@ -44,7 +44,7 @@ if(NOT H5PY_FOUND AND PYTHONINTERP_FOUND)
+             "(${H5PY_VERSION_MAJOR} * 10000) + (${H5PY_VERSION_MINOR} * 100) + ${H5PY_VERSION_PATCH}")
+         
+     endif(H5PY_COMMAND_RESULT MATCHES 0)
+-endif(NOT H5PY_FOUND AND PYTHONINTERP_FOUND)
++endif(NOT H5PY_FOUND AND Python_FOUND)
+ 
+ find_package_handle_standard_args(  H5PY
+                                     REQUIRED_VARS H5PY_VERSION
+diff --git a/cmake/Modules/FindMPI4PY.cmake b/cmake/Modules/FindMPI4PY.cmake
+index 1e797e2..6b98e20 100644
+--- a/cmake/Modules/FindMPI4PY.cmake
++++ b/cmake/Modules/FindMPI4PY.cmake
+@@ -11,13 +11,13 @@
+ 
+ # Finding mpi4Py involves calling the Python interpreter
+ #Check wether we have already searched the Python interpreter
+-if(NOT PYTHONINTERP_FOUND)
+-    find_package(PythonInterp REQUIRED)
++if(NOT Python_FOUND)
++    find_package(Python REQUIRED)
+ endif()
+ 
+-if(NOT MPI4PY_FOUND AND PYTHONINTERP_FOUND)
++if(NOT MPI4PY_FOUND AND Python_FOUND)
+     execute_process(COMMAND
+-      "${PYTHON_EXECUTABLE}" "-c" "exec(\"try:\\n import mpi4py;\\n print(mpi4py.__version__);\\n print(mpi4py.get_include())\\nexcept:\\n exit(1)\")"
++      "${Python_EXECUTABLE}" "-c" "exec(\"try:\\n import mpi4py;\\n print(mpi4py.__version__);\\n print(mpi4py.get_include())\\nexcept:\\n exit(1)\")"
+       OUTPUT_VARIABLE _MPI4PY_VALUES
+       RESULT_VARIABLE MPI4PY_COMMAND_RESULT
+       OUTPUT_STRIP_TRAILING_WHITESPACE)
+@@ -44,7 +44,7 @@ if(NOT MPI4PY_FOUND AND PYTHONINTERP_FOUND)
+             "(${MPI4PY_VERSION_MAJOR} * 10000) + (${MPI4PY_VERSION_MINOR} * 100)")
+         
+     endif(MPI4PY_COMMAND_RESULT MATCHES 0)
+-endif(NOT MPI4PY_FOUND AND PYTHONINTERP_FOUND)
++endif(NOT MPI4PY_FOUND AND Python_FOUND)
+ 
+ find_package_handle_standard_args(  MPI4PY
+                                     REQUIRED_VARS MPI4PY_INCLUDE_DIRS
+diff --git a/cmake/Modules/FindNUMPY.cmake b/cmake/Modules/FindNUMPY.cmake
+index 0510573..296d73f 100644
+--- a/cmake/Modules/FindNUMPY.cmake
++++ b/cmake/Modules/FindNUMPY.cmake
+@@ -12,13 +12,13 @@
+ 
+ # Finding NumPy involves calling the Python interpreter
+ #Check wether we have already searched the Python interpreter
+-if(NOT PYTHONINTERP_FOUND)
+-    find_package(PythonInterp REQUIRED)
++if(NOT Python_FOUND)
++    find_package(Python REQUIRED)
+ endif()
+ 
+-if(NOT NUMPY_FOUND AND PYTHONINTERP_FOUND)
++if(NOT NUMPY_FOUND AND Python_FOUND)
+     execute_process(COMMAND
+-      "${PYTHON_EXECUTABLE}" "-c" "exec(\"try:\\n import numpy;\\n print(numpy.__version__);\\n print(numpy.get_include())\\nexcept:\\n exit(1)\")"
++      "${Python_EXECUTABLE}" "-c" "exec(\"try:\\n import numpy;\\n print(numpy.__version__);\\n print(numpy.get_include())\\nexcept:\\n exit(1)\")"
+       OUTPUT_VARIABLE _NUMPY_VALUES
+       RESULT_VARIABLE NUMPY_COMMAND_RESULT
+       OUTPUT_STRIP_TRAILING_WHITESPACE)
+@@ -43,7 +43,7 @@ if(NOT NUMPY_FOUND AND PYTHONINTERP_FOUND)
+             "(${NUMPY_VERSION_MAJOR} * 10000) + (${NUMPY_VERSION_MINOR} * 100) + ${NUMPY_VERSION_PATCH}")
+         
+     endif(NUMPY_COMMAND_RESULT MATCHES 0)
+-endif(NOT NUMPY_FOUND AND PYTHONINTERP_FOUND)
++endif(NOT NUMPY_FOUND AND Python_FOUND)
+ 
+ find_package_handle_standard_args(  NUMPY
+                                     REQUIRED_VARS NUMPY_INCLUDE_DIRS
+diff --git a/cmake/Modules/FindSCIPY.cmake b/cmake/Modules/FindSCIPY.cmake
+index b56f9c2..5583a7d 100644
+--- a/cmake/Modules/FindSCIPY.cmake
++++ b/cmake/Modules/FindSCIPY.cmake
+@@ -11,13 +11,13 @@
+ 
+ # Finding SciPy involves calling the Python interpreter
+ #Check wether we have already searched the Python interpreter
+-if(NOT PYTHONINTERP_FOUND)
+-    find_package(PythonInterp REQUIRED)
++if(NOT Python_FOUND)
++    find_package(Python REQUIRED)
+ endif()
+ 
+-if(NOT SCIPY_FOUND AND PYTHONINTERP_FOUND)
++if(NOT SCIPY_FOUND AND Python_FOUND)
+     execute_process(COMMAND
+-      "${PYTHON_EXECUTABLE}" "-c" "exec(\"try:\\n import numpy;\\n import scipy;\\n print(scipy.__version__);\\n print(numpy.get_include())\\nexcept:\\n exit(1)\")"
++      "${Python_EXECUTABLE}" "-c" "exec(\"try:\\n import numpy;\\n import scipy;\\n print(scipy.__version__);\\n print(numpy.get_include())\\nexcept:\\n exit(1)\")"
+       OUTPUT_VARIABLE _SCIPY_VALUES
+       RESULT_VARIABLE SCIPY_COMMAND_RESULT
+       OUTPUT_STRIP_TRAILING_WHITESPACE)
+@@ -39,12 +39,11 @@ if(NOT SCIPY_FOUND AND PYTHONINTERP_FOUND)
+         list(GET _SCIPY_VERSION_LIST 0 SCIPY_VERSION_MAJOR)
+         list(GET _SCIPY_VERSION_LIST 1 SCIPY_VERSION_MINOR)
+         list(GET _SCIPY_VERSION_LIST 2 SCIPY_VERSION_PATCH)
+-        string(REGEX MATCH "[0-9]*" NUMPY_VERSION_PATCH ${NUMPY_VERSION_PATCH})
+         math(EXPR SCIPY_VERSION_DECIMAL
+             "(${SCIPY_VERSION_MAJOR} * 10000) + (${SCIPY_VERSION_MINOR} * 100) + ${SCIPY_VERSION_PATCH}")
+         
+     endif(SCIPY_COMMAND_RESULT MATCHES 0)
+-endif(NOT SCIPY_FOUND AND PYTHONINTERP_FOUND)
++endif(NOT SCIPY_FOUND AND Python_FOUND)
+ 
+ find_package_handle_standard_args(  SCIPY
+                                     REQUIRED_VARS SCIPY_INCLUDE_DIRS
+diff --git a/cmake/Modules/UseF2Py.cmake b/cmake/Modules/UseF2Py.cmake
+index d5f985e..7e81aa9 100644
+--- a/cmake/Modules/UseF2Py.cmake
++++ b/cmake/Modules/UseF2Py.cmake
+@@ -19,10 +19,10 @@
+ # |   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.                 |
+ # +-----------------------------------------------------------------------------+
+ 
+-find_package(PythonInterp REQUIRED)
++find_package(Python REQUIRED)
+ 
+ if (NOT F2PY_SUFFIX)
+-  execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX') or sysconfig.get_config_var('SO'))"
++  execute_process(COMMAND "${Python_EXECUTABLE}" -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX') or sysconfig.get_config_var('SO'))"
+                   OUTPUT_VARIABLE PYTHON_EXT_SUFFIX
+                   RESULT_VARIABLE FOUND_PYTHON_EXT_SUFFIX)
+   if (NOT ${FOUND_PYTHON_EXT_SUFFIX} EQUAL 0)
+@@ -98,7 +98,7 @@ macro (add_f2py_module _name)
+   # output will be a shared library that can be imported by python.
+   if ( "${_srcs}" MATCHES "^[^;]*\\.pyf;" )
+     add_custom_command(OUTPUT "${_name}${F2PY_SUFFIX}"
+-      COMMAND ${PYTHON_EXECUTABLE} -m numpy.f2py --quiet -m ${_name}
++      COMMAND ${Python_EXECUTABLE} -m numpy.f2py --quiet -m ${_name}
+               --build-dir "${CMAKE_CURRENT_BINARY_DIR}/f2py-${_name}"
+               ${_fcompiler_opts} ${_inc_opts} -c ${_abs_srcs}
+       DEPENDS ${_srcs}
+@@ -106,10 +106,10 @@ macro (add_f2py_module _name)
+ 
+   else ( "${_srcs}" MATCHES "^[^;]*\\.pyf;" )
+     add_custom_command(OUTPUT "${_name}${F2PY_SUFFIX}"
+-      COMMAND ${PYTHON_EXECUTABLE} -m numpy.f2py --quiet -m ${_name} -h ${_name}.pyf
++      COMMAND ${Python_EXECUTABLE} -m numpy.f2py --quiet -m ${_name} -h ${_name}.pyf
+               --build-dir "${CMAKE_CURRENT_BINARY_DIR}/f2py-${_name}"
+               --include-paths ${_inc_paths} --overwrite-signature ${_abs_srcs}
+-      COMMAND ${PYTHON_EXECUTABLE} -m numpy.f2py --quiet -m ${_name} -c "${CMAKE_CURRENT_BINARY_DIR}/f2py-${_name}/${_name}.pyf"
++      COMMAND ${Python_EXECUTABLE} -m numpy.f2py --quiet -m ${_name} -c "${CMAKE_CURRENT_BINARY_DIR}/f2py-${_name}/${_name}.pyf"
+               --build-dir "${CMAKE_CURRENT_BINARY_DIR}/f2py-${_name}"
+               ${_fcompiler_opts} ${_inc_opts} ${_abs_srcs}
+       DEPENDS ${_srcs}
+diff --git a/cmake/Modules/installviapip.cmake b/cmake/Modules/installviapip.cmake
+index 8f26fa8..3aa6a1a 100644
+--- a/cmake/Modules/installviapip.cmake
++++ b/cmake/Modules/installviapip.cmake
+@@ -1,10 +1,10 @@
+-if(NOT PYTHONINTERP_FOUND)
+-        find_package(PythonInterp REQUIRED)
++if(NOT Python_FOUND)
++        find_package(Python REQUIRED)
+ endif()
+ 
+ FUNCTION(INSTALL_VIA_PIP module RESULT_NAME)
+ #check for pip. The pip installer needs the python-xml module.
+-execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
++execute_process(COMMAND ${Python_EXECUTABLE} -m pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
+     if ("${PYTHON_PACKAGE_LIST}" STREQUAL "")
+         execute_process(COMMAND pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
+         if ("${PYTHON_PACKAGE_LIST}" STREQUAL "")
+@@ -15,7 +15,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip freeze OUTPUT_VARIABLE PYTHO
+                 message(WARNING "CMake was not able to download pip. Trying with a direct call to curl")
+                 execute_process(COMMAND curl -k https://bootstrap.pypa.io/get-pip.py -o get-pip.py RESULT_VARIABLE result)
+             endif()
+-            execute_process(COMMAND ${PYTHON_EXECUTABLE} ./get-pip.py --user RESULT_VARIABLE RES)
++            execute_process(COMMAND ${Python_EXECUTABLE} ./get-pip.py --user RESULT_VARIABLE RES)
+ #            message(${RES})
+             if(${RES})#FIXME: Check wether this works for other versions...
+                 message(WARNING "Not able to successfully execute Pip. assuming this is due to an old version of Python.")
+@@ -37,7 +37,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip freeze OUTPUT_VARIABLE PYTHO
+ 
+ message(STATUS "Installing ${module}")
+ 
+-execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip "install" "--user" ${module} RESULT_VARIABLE SUCCESS)
++execute_process(COMMAND ${Python_EXECUTABLE} -m pip "install" "--user" ${module} RESULT_VARIABLE SUCCESS)
+ if (NOT "${SUCCESS}" STREQUAL "0")
+   execute_process(COMMAND pip "install" "--user" ${module} RESULT_VARIABLE SUCCESS)
+   if (NOT "${SUCCESS}" STREQUAL "0")
 diff --git a/src/ctqmc_fortran/CMakeLists.txt b/src/ctqmc_fortran/CMakeLists.txt
 index 9eed7fd..0471f73 100644
 --- a/src/ctqmc_fortran/CMakeLists.txt
@@ -81,18 +422,64 @@ index c8e59ce..b1e8866 100644
      COMMAND_EXPAND_LISTS)
  
  #####################################
+diff --git a/testsuite/ctqmc.tests/CMakeLists.txt b/testsuite/ctqmc.tests/CMakeLists.txt
+index 57e7500..fba9edf 100644
+--- a/testsuite/ctqmc.tests/CMakeLists.txt
++++ b/testsuite/ctqmc.tests/CMakeLists.txt
+@@ -1,6 +1,5 @@
+ cmake_minimum_required(VERSION 3.18)
+ Project(ctqmc.tests Fortran CXX)
+-find_package(PythonLibs REQUIRED)
+ add_library(CTQMCMAIN STATIC ${SRCCTQMC}/CTQMC.F90)
+ set_property(TARGET CTQMCMAIN PROPERTY POSITION_INDEPENDENT_CODE ON)
+ target_link_libraries(CTQMCMAIN CTQMCLIB)
+@@ -15,7 +14,7 @@ set_target_properties(${iter} PROPERTIES LINKER_LANGUAGE Fortran)
+ target_link_libraries(${iter} CTQMCMAIN)
+ target_link_libraries(${iter} CTQMCLIB)
+ target_link_libraries(${iter} mtrng)
+-target_link_libraries(${iter} ${PYTHON_LIBRARIES})
++target_link_libraries(${iter} Python::Module)
+ target_link_libraries(${iter} ${LAPACK_LIBRARIES})
+ target_link_libraries(${iter} ${NFFT_LIBRARIES})
+ endforeach(iter)
+diff --git a/testsuite/maxent.tests/CMakeLists.txt b/testsuite/maxent.tests/CMakeLists.txt
+index 5793446..3659f62 100644
+--- a/testsuite/maxent.tests/CMakeLists.txt
++++ b/testsuite/maxent.tests/CMakeLists.txt
+@@ -1,6 +1,5 @@
+ cmake_minimum_required(VERSION 3.18)
+ Project(maxent.tests Fortran)
+-find_package(PythonLibs REQUIRED)
+ add_library(MAXENTMAIN STATIC ${SRCMAXENT}/MaximumEntropy.F90)
+ set_property(TARGET MAXENTMAIN PROPERTY POSITION_INDEPENDENT_CODE ON)
+ target_link_libraries(MAXENTMAIN MAXENTLIB)
+@@ -12,7 +11,7 @@ foreach(iter ${maxenttests})
+ set_target_properties(${iter} PROPERTIES LINKER_LANGUAGE Fortran)
+ target_link_libraries(${iter} MAXENTMAIN)
+ target_link_libraries(${iter} MAXENTLIB)
+-target_link_libraries(${iter} ${PYTHON_LIBRARIES})
++target_link_libraries(${iter} Python::Module)
+ target_link_libraries(${iter} ${LAPACK_LIBRARIES})
+ endforeach(iter)
+ 
 diff --git a/testsuite/w2dyn.tests/CMakeLists.txt b/testsuite/w2dyn.tests/CMakeLists.txt
-index 89d789c..d1c3ea5 100644
+index 89d789c..dd12f66 100644
 --- a/testsuite/w2dyn.tests/CMakeLists.txt
 +++ b/testsuite/w2dyn.tests/CMakeLists.txt
-@@ -5,8 +5,8 @@ find_package(PythonInterp REQUIRED)
+@@ -1,12 +1,12 @@
+ cmake_minimum_required(VERSION 3.18)
+ Project(w2dyn.tests)
+-find_package(PythonInterp REQUIRED)
++find_package(Python REQUIRED)
+ 
  enable_testing()
- if (PYTHON_VERSION_MAJOR GREATER 2)
+-if (PYTHON_VERSION_MAJOR GREATER 2)
++if (Python_VERSION_MAJOR GREATER 2)
    add_test(NAME 1-syntax_check
 -    COMMAND ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_SOURCE_DIR})
-+    COMMAND ${PYTHON_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR})
++    COMMAND ${Python_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR})
  else ()
    add_test(NAME 1-syntax_check
 -    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/compileall.py ${CMAKE_SOURCE_DIR})
-+    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/compileall.py ${PROJECT_SOURCE_DIR})
++    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/compileall.py ${PROJECT_SOURCE_DIR})
  endif()
