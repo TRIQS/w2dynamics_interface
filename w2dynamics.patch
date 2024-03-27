@@ -1,16 +1,7 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 24a3f3b..2899d85 100644
+index b72c069..6ccec60 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -14,7 +14,7 @@ endif(POLICY CMP0074)
- SET(VERSION 1.0)
- 
- # Set the module path, so that CMake also considers our modules
--SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-+SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules/")
- 
- # Uncomment if it is required that Fortran 90 is supported
- IF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 @@ -52,15 +52,6 @@ SET( CMAKE_Fortran_FLAGS             "${CMAKE_Fortran_FLAGS} -DLAPACK77_Interfac
  # Define the actual files and folders that make up the build
  ############################################################
@@ -69,7 +60,7 @@ index 24a3f3b..2899d85 100644
  find_package(HDF5 1.6 COMPONENTS Fortran)# enforce the availability of the Fortran bindings. FIXME: Test on a suitable computer
  
  if((NOT H5PY_FOUND) AND (NOT HDF5_FOUND))
-@@ -147,49 +122,17 @@ include(ExternalProject)
+@@ -147,41 +122,9 @@ include(ExternalProject)
      find_package(HDF5 1.6 COMPONENTS Fortran)
  endif()
  
@@ -114,49 +105,15 @@ index 24a3f3b..2899d85 100644
  
  # Define the executable name
  SET(CTQMCEXE ctqmc)
+@@ -226,7 +169,7 @@ message(STATUS "Installation prefix directory (variable CMAKE_INSTALL_PREFIX): $
+ message(STATUS "Installing executables DMFT.py, cthyb, Maxent.py, hgrep (option INSTALL_EXECUTABLES): ${INSTALL_EXECUTABLES}")
  
- # Define some directories
--SET(SRC ${CMAKE_SOURCE_DIR}/src)
-+SET(SRC ${PROJECT_SOURCE_DIR}/src)
- SET(LIB ${CMAKE_CURRENT_BINARY_DIR}/lib)
--#SET(BIN ${CMAKE_SOURCE_DIR}/bin)
-+#SET(BIN ${PROJECT_SOURCE_DIR}/bin)
- 
- SET(SRCCTQMC ${SRC}/ctqmc_fortran)
- SET(SRCMAXENT ${SRC}/maxent)
-@@ -207,7 +150,7 @@ ADD_SUBDIRECTORY(${SRCMAXENT})
- 
- # Add a distclean target to the Makefile
- ADD_CUSTOM_TARGET(distclean 
--    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/distclean.cmake
-+    COMMAND ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/distclean.cmake
- )
- 
- ADD_SUBDIRECTORY(testsuite/mtrng.tests)
-@@ -227,7 +170,7 @@ message(STATUS "Installing executables DMFT.py, cthyb, Maxent.py, hgrep (option
- 
- install(SCRIPT PyCompileall.txt)
  install(DIRECTORY w2dyn
 -  DESTINATION lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages
 +  DESTINATION lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages
    COMPONENT Python_Package)
  if(INSTALL_EXECUTABLES)
    install(PROGRAMS DMFT.py cthyb hgrep Maxent.py
-diff --git a/PyCompileall.txt b/PyCompileall.txt
-index 329c877..1fd5532 100644
---- a/PyCompileall.txt
-+++ b/PyCompileall.txt
-@@ -1,7 +1,7 @@
--if (PYTHON_VERSION_MAJOR GREATER 2)
-+if (Python_VERSION_MAJOR GREATER 2)
-   execute_process(COMMAND
--    ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_SOURCE_DIR}/w2dyn)
-+    ${Python_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR}/w2dyn)
- else ()
-   execute_process(COMMAND
--    ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/testsuite/w2dyn.tests/compileall.py ${CMAKE_SOURCE_DIR}/w2dyn)
-+    ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/testsuite/w2dyn.tests/compileall.py ${PROJECT_SOURCE_DIR}/w2dyn)
- endif()
 diff --git a/cmake/Modules/FindCONFIGOBJ.cmake b/cmake/Modules/FindCONFIGOBJ.cmake
 index 4f4a9ee..59a81bc 100644
 --- a/cmake/Modules/FindCONFIGOBJ.cmake
@@ -397,43 +354,42 @@ index 8f26fa8..3aa6a1a 100644
    execute_process(COMMAND pip "install" "--user" ${module} RESULT_VARIABLE SUCCESS)
    if (NOT "${SUCCESS}" STREQUAL "0")
 diff --git a/src/ctqmc_fortran/CMakeLists.txt b/src/ctqmc_fortran/CMakeLists.txt
-index 9eed7fd..0471f73 100644
+index fad98e2..d5e8b7e 100644
 --- a/src/ctqmc_fortran/CMakeLists.txt
 +++ b/src/ctqmc_fortran/CMakeLists.txt
 @@ -68,7 +68,7 @@ endif (USE_NFFT)
      COMPILE_OPTIONS $<$<AND:$<C_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>>:-Wno-error=incompatible-function-pointer-types>)
    target_link_libraries(${_name} PRIVATE fortranobject CTQMCLIB ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${FFTW_LIBRARIES} $<$<BOOL:${USE_NFFT}>:nfft>)
    add_custom_command(TARGET ${_name} POST_BUILD
--    COMMAND ${CMAKE_COMMAND} -E copy -t "${CMAKE_SOURCE_DIR}/w2dyn/auxiliaries" $<TARGET_FILE:${_name}>
-+    COMMAND cp $<TARGET_FILE:${_name}> ${PROJECT_SOURCE_DIR}/w2dyn/auxiliaries/
+-    COMMAND ${CMAKE_COMMAND} -E copy -t "${PROJECT_SOURCE_DIR}/w2dyn/auxiliaries" $<TARGET_FILE:${_name}>
++    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${_name}> ${PROJECT_SOURCE_DIR}/w2dyn/auxiliaries/
      COMMAND_EXPAND_LISTS)
  
  IF(WIN32)
 diff --git a/src/maxent/CMakeLists.txt b/src/maxent/CMakeLists.txt
-index c8e59ce..b1e8866 100644
+index 033ed92..39978c7 100644
 --- a/src/maxent/CMakeLists.txt
 +++ b/src/maxent/CMakeLists.txt
 @@ -53,7 +53,7 @@ set_target_properties(MAXENTLIB PROPERTIES COMPILE_FLAGS "-DLAPACK77_Interface")
      COMPILE_OPTIONS $<$<AND:$<C_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>>:-Wno-error=incompatible-function-pointer-types>)
    target_link_libraries(${_name} PRIVATE fortranobject MAXENTLIB ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
    add_custom_command(TARGET ${_name} POST_BUILD
--    COMMAND ${CMAKE_COMMAND} -E copy -t "${CMAKE_SOURCE_DIR}/w2dyn/maxent" $<TARGET_FILE:${_name}>
-+    COMMAND cp $<TARGET_FILE:${_name}> ${PROJECT_SOURCE_DIR}/w2dyn/maxent/
+-    COMMAND ${CMAKE_COMMAND} -E copy -t "${PROJECT_SOURCE_DIR}/w2dyn/maxent" $<TARGET_FILE:${_name}>
++    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${_name}> ${PROJECT_SOURCE_DIR}/w2dyn/maxent/
      COMMAND_EXPAND_LISTS)
  
  #####################################
 diff --git a/testsuite/ctqmc.tests/CMakeLists.txt b/testsuite/ctqmc.tests/CMakeLists.txt
-index 57e7500..fba9edf 100644
+index 5c27ff4..403b464 100644
 --- a/testsuite/ctqmc.tests/CMakeLists.txt
 +++ b/testsuite/ctqmc.tests/CMakeLists.txt
-@@ -1,6 +1,5 @@
+@@ -1,5 +1,4 @@
  cmake_minimum_required(VERSION 3.18)
- Project(ctqmc.tests Fortran CXX)
 -find_package(PythonLibs REQUIRED)
  add_library(CTQMCMAIN STATIC ${SRCCTQMC}/CTQMC.F90)
  set_property(TARGET CTQMCMAIN PROPERTY POSITION_INDEPENDENT_CODE ON)
  target_link_libraries(CTQMCMAIN CTQMCLIB)
-@@ -15,7 +14,7 @@ set_target_properties(${iter} PROPERTIES LINKER_LANGUAGE Fortran)
+@@ -14,7 +13,7 @@ set_target_properties(${iter} PROPERTIES LINKER_LANGUAGE Fortran)
  target_link_libraries(${iter} CTQMCMAIN)
  target_link_libraries(${iter} CTQMCLIB)
  target_link_libraries(${iter} mtrng)
@@ -443,17 +399,16 @@ index 57e7500..fba9edf 100644
  target_link_libraries(${iter} ${NFFT_LIBRARIES})
  endforeach(iter)
 diff --git a/testsuite/maxent.tests/CMakeLists.txt b/testsuite/maxent.tests/CMakeLists.txt
-index 5793446..3659f62 100644
+index 7b5f85f..9702d18 100644
 --- a/testsuite/maxent.tests/CMakeLists.txt
 +++ b/testsuite/maxent.tests/CMakeLists.txt
-@@ -1,6 +1,5 @@
+@@ -1,5 +1,4 @@
  cmake_minimum_required(VERSION 3.18)
- Project(maxent.tests Fortran)
 -find_package(PythonLibs REQUIRED)
  add_library(MAXENTMAIN STATIC ${SRCMAXENT}/MaximumEntropy.F90)
  set_property(TARGET MAXENTMAIN PROPERTY POSITION_INDEPENDENT_CODE ON)
  target_link_libraries(MAXENTMAIN MAXENTLIB)
-@@ -12,7 +11,7 @@ foreach(iter ${maxenttests})
+@@ -11,7 +10,7 @@ foreach(iter ${maxenttests})
  set_target_properties(${iter} PROPERTIES LINKER_LANGUAGE Fortran)
  target_link_libraries(${iter} MAXENTMAIN)
  target_link_libraries(${iter} MAXENTLIB)
@@ -463,23 +418,14 @@ index 5793446..3659f62 100644
  endforeach(iter)
  
 diff --git a/testsuite/w2dyn.tests/CMakeLists.txt b/testsuite/w2dyn.tests/CMakeLists.txt
-index 89d789c..dd12f66 100644
+index c592d91..18a3414 100644
 --- a/testsuite/w2dyn.tests/CMakeLists.txt
 +++ b/testsuite/w2dyn.tests/CMakeLists.txt
-@@ -1,12 +1,12 @@
+@@ -1,6 +1,5 @@
  cmake_minimum_required(VERSION 3.18)
- Project(w2dyn.tests)
 -find_package(PythonInterp REQUIRED)
-+find_package(Python REQUIRED)
  
  enable_testing()
--if (PYTHON_VERSION_MAJOR GREATER 2)
-+if (Python_VERSION_MAJOR GREATER 2)
-   add_test(NAME 1-syntax_check
--    COMMAND ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_SOURCE_DIR})
-+    COMMAND ${Python_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR})
- else ()
-   add_test(NAME 1-syntax_check
--    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/compileall.py ${CMAKE_SOURCE_DIR})
-+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/compileall.py ${PROJECT_SOURCE_DIR})
- endif()
+ add_test(NAME 1-syntax_check
+-         COMMAND ${PYTHON_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR})
++         COMMAND ${Python_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR})
