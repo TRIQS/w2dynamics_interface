@@ -353,32 +353,6 @@ index 8f26fa8..3aa6a1a 100644
  if (NOT "${SUCCESS}" STREQUAL "0")
    execute_process(COMMAND pip "install" "--user" ${module} RESULT_VARIABLE SUCCESS)
    if (NOT "${SUCCESS}" STREQUAL "0")
-diff --git a/src/ctqmc_fortran/CMakeLists.txt b/src/ctqmc_fortran/CMakeLists.txt
-index fad98e2..d5e8b7e 100644
---- a/src/ctqmc_fortran/CMakeLists.txt
-+++ b/src/ctqmc_fortran/CMakeLists.txt
-@@ -68,7 +68,7 @@ endif (USE_NFFT)
-     COMPILE_OPTIONS $<$<AND:$<C_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>>:-Wno-error=incompatible-function-pointer-types>)
-   target_link_libraries(${_name} PRIVATE fortranobject CTQMCLIB ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${FFTW_LIBRARIES} $<$<BOOL:${USE_NFFT}>:nfft>)
-   add_custom_command(TARGET ${_name} POST_BUILD
--    COMMAND ${CMAKE_COMMAND} -E copy -t "${PROJECT_SOURCE_DIR}/w2dyn/auxiliaries" $<TARGET_FILE:${_name}>
-+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${_name}> ${PROJECT_SOURCE_DIR}/w2dyn/auxiliaries/
-     COMMAND_EXPAND_LISTS)
- 
- IF(WIN32)
-diff --git a/src/maxent/CMakeLists.txt b/src/maxent/CMakeLists.txt
-index 033ed92..39978c7 100644
---- a/src/maxent/CMakeLists.txt
-+++ b/src/maxent/CMakeLists.txt
-@@ -53,7 +53,7 @@ set_target_properties(MAXENTLIB PROPERTIES COMPILE_FLAGS "-DLAPACK77_Interface")
-     COMPILE_OPTIONS $<$<AND:$<C_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,16>>:-Wno-error=incompatible-function-pointer-types>)
-   target_link_libraries(${_name} PRIVATE fortranobject MAXENTLIB ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-   add_custom_command(TARGET ${_name} POST_BUILD
--    COMMAND ${CMAKE_COMMAND} -E copy -t "${PROJECT_SOURCE_DIR}/w2dyn/maxent" $<TARGET_FILE:${_name}>
-+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${_name}> ${PROJECT_SOURCE_DIR}/w2dyn/maxent/
-     COMMAND_EXPAND_LISTS)
- 
- #####################################
 diff --git a/testsuite/ctqmc.tests/CMakeLists.txt b/testsuite/ctqmc.tests/CMakeLists.txt
 index 5c27ff4..403b464 100644
 --- a/testsuite/ctqmc.tests/CMakeLists.txt
