@@ -394,7 +394,7 @@ TaudiffMax = -1.0""" % self.norb
                     s1 = spins[0]
                     s2 = spins[1]
 
-                    all_zeros = not np.any(ftau[:, b1, s1, b2, s2] > 1e-5)
+                    all_zeros = not np.any(np.abs(ftau[:, b1, s1, b2, s2]) > 1e-5)
 
                     if not all_zeros:
                         components = np.append(components, comp_ind)
