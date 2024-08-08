@@ -56,7 +56,7 @@ h_int = h_int_kanamori(spin_names, orb_names,
                               [V-J, 0]]),  # Interaction for equal spins
                        array([[U, V],
                               [V, U]]),   # Interaction for opposite spins
-                       J, False)
+                       J, off_diag=False)
 
 h_loc = h_0 + h_int
 
