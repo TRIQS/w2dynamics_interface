@@ -66,30 +66,22 @@ endif()
 message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 
 
-# --- Define the w2dynamics interface version numbers and get the git hash
+# --- Build w2dynamics as a subproject
+
+# w2dynamics specific variables
+get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES)
 set(W2DYN_GIT_HASH v1.1.5)
 message(STATUS "w2dynamics git hash: ${W2DYN_GIT_HASH}")
 
-# --- Build w2dynamics as an external project
-get_property(FFTW_LIBRARIES TARGET triqs::fftw PROPERTY INTERFACE_LINK_LIBRARIES)
-
-include(ExternalProject)
-ExternalProject_Add(w2dynamics
-  PREFIX w2dyn_project
+include(FetchContent)
+FetchContent_Declare(
+  w2dynamics
   GIT_REPOSITORY https://github.com/w2dynamics/w2dynamics
   GIT_TAG ${W2DYN_GIT_HASH}
-  GIT_CONFIG advice.detachedHead=false
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-             -DPYTHON_EXECUTABLE=${TRIQS_PYTHON_EXECUTABLE}
-             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-             -DFFTW_LIBRARIES=${FFTW_LIBRARIES}
-  INSTALL_COMMAND ""
-  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} checkout . && ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
+  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
 )
+FetchContent_MakeAvailable(w2dynamics)
 
-set(W2DYN_ROOT ${PROJECT_BINARY_DIR}/w2dyn_project/src/w2dynamics)
-install(DIRECTORY ${W2DYN_ROOT}/w2dyn DESTINATION ${TRIQS_PYTHON_LIB_DEST_ROOT} FILES_MATCHING PATTERN "*.py" PATTERN "*.so" PATTERN "configspec")
 if(NOT IS_SUBPROJECT)
   message(STATUS "-------- BUILD-TYPE: ${CMAKE_BUILD_TYPE} --------")
 endif()
@@ -108,11 +100,11 @@ if(Build_Tests)
   enable_testing()
 endif()
 
-# Build static libraries by default
-option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" OFF)
-
 # ############
 # Global Compilation Settings
+
+# Build static libraries by default
+option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" OFF)
 
 # Export the list of compile-commands into compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
