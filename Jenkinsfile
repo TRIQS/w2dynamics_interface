@@ -91,6 +91,7 @@ for (int i = 0; i < osxPlatforms.size(); i++) {
           "LD_LIBRARY_PATH=$hdf5/lib",
           "PYTHONPATH=$installDir/lib/python3.12/site-packages",
           "CMAKE_PREFIX_PATH=$venv/lib/cmake/triqs",
+          "VIRTUAL_ENV=$venv",
           "OMP_NUM_THREADS=2",
           "BLAS_ROOT=$openblas",
           "LAPACK_ROOT=$openblas",
