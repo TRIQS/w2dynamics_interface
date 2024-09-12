@@ -78,7 +78,7 @@ FetchContent_Declare(
   w2dynamics
   GIT_REPOSITORY https://github.com/w2dynamics/w2dynamics
   GIT_TAG ${W2DYN_GIT_HASH}
-  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} checkout . && ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
+  PATCH_COMMAND ${TRIQS_GIT_EXECUTABLE} apply ${PROJECT_SOURCE_DIR}/w2dynamics.patch
 )
 FetchContent_MakeAvailable(w2dynamics)
 
