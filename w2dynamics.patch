@@ -348,6 +348,32 @@ index 8f26fa8..3aa6a1a 100644
  if (NOT "${SUCCESS}" STREQUAL "0")
    execute_process(COMMAND pip "install" "--user" ${module} RESULT_VARIABLE SUCCESS)
    if (NOT "${SUCCESS}" STREQUAL "0")
+diff --git a/src/mtrng/random.cc b/src/mtrng/random.cc
+index ff70211..f0d3153 100644
+--- a/src/mtrng/random.cc
++++ b/src/mtrng/random.cc
+@@ -51,10 +51,10 @@ private:
+ class CStdlibRandom;
+ 
+ /** Return log2(x+1), thus avoiding overflow for x == -1 */
+-static unsigned log2p1(unsigned x) {
++static unsigned w2dyn_log2p1(unsigned x) {
+     ++x;
+     if (x == 0)
+-        return log2p1(-2) + 1;
++        return w2dyn_log2p1(-2) + 1;
+     unsigned res = 0;
+     while (x > 1) {
+         x >>= 1;
+@@ -81,7 +81,7 @@ static CStdlibRandom *current = NULL;
+ class CStdlibRandom
+ {
+ public:
+-    static unsigned entropy() { return log2p1(RAND_MAX); }
++    static unsigned entropy() { return w2dyn_log2p1(RAND_MAX); }
+ 
+     CStdlibRandom(unsigned seed=0) {
+         assert(current == NULL && "class is a singleton");
 diff --git a/testsuite/ctqmc.tests/CMakeLists.txt b/testsuite/ctqmc.tests/CMakeLists.txt
 index 5c27ff4..403b464 100644
 --- a/testsuite/ctqmc.tests/CMakeLists.txt
