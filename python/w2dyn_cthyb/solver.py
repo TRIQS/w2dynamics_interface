@@ -124,7 +124,7 @@ class Solver():
 
         random_seed = params_kw.pop("random_seed", 1)
         move_double = params_kw.pop("move_double", True)
-        measure_G_l = params_kw.pop("measure_G_l", False)
+        measure_G_l = params_kw.pop("measure_G_l", True)
         measure_G_tau = params_kw.pop("measure_G_tau", True)
         measure_pert_order = params_kw.pop("measure_pert_order", False)
         statesampling = params_kw.pop("statesampling", False)
@@ -247,6 +247,8 @@ TaudiffMax = -1.0""" % self.norb
         ### in a more sophisticated way
 
         cfg["General"]["beta"] = self.beta
+        cfg["General"]["SelfEnergy"] = "dyson"
+        cfg["General"]["siw_moments"] = "estimate"
         cfg["QMC"]["Niw"] = self.n_iw
         cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
 
@@ -356,6 +358,8 @@ TaudiffMax = -1.0""" % self.norb
 
         ### solve impurity problem
         mccfgcontainer = []
+        siw_method = cfg["General"]["SelfEnergy"]
+        smom_method = cfg["General"]["siw_moments"]
         iter_no = 1
         if measure_G_tau or measure_G_l or measure_pert_order:
 
@@ -363,14 +367,20 @@ TaudiffMax = -1.0""" % self.norb
                 solver.set_problem(imp_problem)
                 solver.umatrix = U_ijkl
                 result = solver.solve(mccfgcontainer)
+                result.postprocessing(siw_method, smom_method)
                 gtau = result.other["gtau-full"]
+                giw = result.giw
+                siw = result.siw
 
             elif not worm:
 
                 solver.set_problem(imp_problem)
                 solver.umatrix = U_ijkl
                 result = solver.solve(iter_no, mccfgcontainer)
+                result.postprocessing(siw_method, smom_method)
                 gtau = result.other["gtau-full"]
+                giw = result.giw
+                siw = result.siw
 
             elif worm_get_sector_index(cfg['QMC']) == 2:
 
@@ -687,16 +697,11 @@ TaudiffMax = -1.0""" % self.norb
             self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
                 gtau, self.beta, self.gf_struct)
 
-            self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
+            self.G_iw, self.G_iw_error = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(
+                giw, self.n_iw, self.beta, self.gf_struct)
 
-            ### I will use the FFT from triqs here...
-            for name, g in self.G_tau:
-                bl_size = g.target_shape[0]
-                known_moments = np.zeros((4, bl_size, bl_size), dtype=complex)
-                for i in range(bl_size):
-                    known_moments[1,i,i] = 1
-
-                self.G_iw[name].set_from_fourier(g, known_moments)
+            self.Sigma_iw, self.Sigma_iw_error = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(
+                siw, self.n_iw, self.beta, self.gf_struct)
 
         ### add perturbation order as observable
         #print 'measure_pert_order ', measure_pert_order
