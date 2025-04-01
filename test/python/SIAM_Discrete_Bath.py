@@ -82,6 +82,7 @@ if mpi.is_master_node():
     with HDFArchive("SIAM_Discrete_Bath.out.h5",'w') as results:
         results["G_iw"] = S.G_iw
         results["G_tau"] = S.G_tau
+        results["Sigma_iw"] = S.Sigma_iw
 
 from triqs.utility.h5diff import h5diff
 if args.libcxx:
@@ -117,6 +118,7 @@ if mpi.is_master_node():
     with HDFArchive("SIAM_Discrete_Bath.delta_interface.out.h5",'w') as results:
         results["G_iw"] = S.G_iw
         results["G_tau"] = S.G_tau
+        results["Sigma_iw"] = S.Sigma_iw
 
 if args.libcxx:
     h5diff("SIAM_Discrete_Bath.libcxx.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5")

@@ -250,8 +250,6 @@ TaudiffMax = -1.0""" % self.norb
         cfg["General"]["beta"] = self.beta
         cfg["General"]["siw_moments"] = "estimate"
         cfg["General"]["SelfEnergy"] = selfenergy
-        if selfenergy in ["improved_worm", "symmetric_improved_worm"]:
-            cfg["FTType"] = "none_worm"
         cfg["QMC"]["Niw"] = self.n_iw
         cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
 
@@ -267,6 +265,13 @@ TaudiffMax = -1.0""" % self.norb
         cfg["QMC"]["measurement_time"] = max_time
         cfg["QMC"]["NCorr"] = length_cycle
 
+        if selfenergy == "improved_worm":
+            cfg["QMC"]["WormMeasGSigmaiw"] = 1
+            cfg["General"]["FTType"] = "none_worm"
+        elif selfenergy == "symmetric_improved_worm":
+            cfg["QMC"]["WormMeasQQ"] = 1
+            cfg["General"]["FTType"] = "none_worm"
+
         if statesampling:
             cfg["QMC"]["statesampling"] = 1
         else:
@@ -279,10 +284,6 @@ TaudiffMax = -1.0""" % self.norb
                 cfg["QMC"]["WormMeasGiw"] = 1
                 cfg["QMC"]["WormMeasGtau"] = 1
                 cfg["QMC"]["WormSearchEta"] = 1
-                if selfenergy == "improved_worm":
-                    cfg["QMC"]["WormMeasGSigmaiw"] = 1
-                if selfenergy == "symmetric_improved_worm":
-                    cfg["QMC"]["WormMeasQQ"] = 1
 
             ### set worm parameters to some default values if not set by user
             if percentageworminsert != 0.0:
@@ -430,6 +431,7 @@ TaudiffMax = -1.0""" % self.norb
                     solver.set_problem(imp_problem)
                     solver.umatrix = U_ijkl
                     result_aux, result = solver.solve_component(1, 2, comp_ind, mccfgcontainer)
+                    result.postprocessing(siw_method, smom_method)
 
                     for i in list(result.other.keys()):
 
@@ -454,6 +456,8 @@ TaudiffMax = -1.0""" % self.norb
                     gtau[0, b1, s1, b2, s2, :] = result.other[gtau_name]
 
                 gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+                giw = result.giw
+                siw = result.siw
 
             elif cfg["QMC"]["FourPnt"] == 8: # Know that: worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
