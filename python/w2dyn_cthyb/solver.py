@@ -459,6 +459,14 @@ TaudiffMax = -1.0""" % self.norb
                 giw = result.giw
                 siw = result.siw
 
+            elif worm_get_sector_index(cfg['QMC']) == 3:
+
+                raise NotImplementedError("improved_worm")
+
+            elif worm_get_sector_index(cfg['QMC']) == 10:
+
+                raise NotImplementedError("symmetric_improved_worm")
+
             elif cfg["QMC"]["FourPnt"] == 8: # Know that: worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
                 if wormcomponents is not None:
