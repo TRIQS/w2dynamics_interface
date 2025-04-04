@@ -624,6 +624,8 @@ TaudiffMax = -1.0""" % self.norb
                     gf_err.data[:] = gf.stderr()
 
                     self.GF_worm_components.append((component, gf_mean, gf_err))
+            else:
+                raise NotImplementedError("The chosen combination of parameters is not supported")
 
 
         # TRIQS/cthyb like interface to sample all components of the two-particle Green's function
