@@ -87,12 +87,16 @@ if(NOT IS_SUBPROJECT)
 endif()
 
 # Python Support
-if(NOT TRIQS_WITH_PYTHON_SUPPORT)
+option(PythonSupport "Build with Python support" ON)
+if(PythonSupport AND NOT TRIQS_WITH_PYTHON_SUPPORT)
   message(FATAL_ERROR "TRIQS was installed without Python support. Cannot build the Python Interface. Disable the build with -DPythonSupport=OFF")
 endif()
 
 # Documentation
 option(Build_Documentation "Build documentation" OFF)
+if(NOT IS_SUBPROJECT AND (Build_Documentation AND NOT PythonSupport))
+  message(FATAL_ERROR "Build_Documentation=ON requires PythonSupport to be enabled")
+endif()
 
 # Testing
 option(Build_Tests "Build tests" ON)
