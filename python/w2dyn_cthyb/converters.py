@@ -293,14 +293,14 @@ def triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G_iw):
     return g_tosos, beta, niw
 
 # ----------------------------------------------------------------------
-def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, n_iw, beta, gf_struct):
+def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw_wosos, n_iw, beta, gf_struct):
 
     """ Convert a W2Dynamics ndarray format with indices [wosos] or [wff]
     where t is time, o is orbital, s is spin index, f is flavour
     to a block Triqs Matsubara response function
 
     Takes:
-    giw  : Green function as numpy array
+    giw_wosos : Green function as numpy array
     beta : inverse temperature
     niw : number of Matsubaras
     gf_struct: desired block structure of triqs GF
@@ -310,20 +310,24 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, n_iw, beta, gf_struct):
 
     Author: Hugo U. R. Strand (2019) """
 
+    giw = giw_wosos.mean()
+    giw_err = giw_wosos.stderr()
+
     ### check number of Matsubaras is correct and as last dimension
     ### the variable n_iw has only positive Matsubaras, the objects
     ### have both negative and positive
-    n_iw_check = giw.shape[-1]/2
+    n_iw_check = giw.shape[0]/2
     assert n_iw_check == n_iw
 
     ### check if giw is 3 or 5 dimensional, and make it 3 dimensional
     if len(giw.shape) == 5:
-        norbs = giw.shape[0]
-        nspin = giw.shape[1]
+        norbs = giw.shape[1]
+        nspin = giw.shape[2]
         nflavour = norbs * nspin
-        giw = giw.reshape(nflavour, nflavour, 2*n_iw)
+        giw = giw.reshape(2*n_iw, nflavour, nflavour)
+        giw_err = giw_err.reshape(2*n_iw, nflavour, nflavour)
     elif len(giw.shape) == 3:
-        nflavour = giw.shape[0]
+        nflavour = giw.shape[1]
     else:
        raise Exception("giw array must be 3 or 5 dimensional with iw as last dimension!")
 
@@ -332,22 +336,27 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw, n_iw, beta, gf_struct):
     ### since then the output can have another structure...
     from triqs.gf import MeshImFreq, BlockGf
     iw_mesh = MeshImFreq(beta, 'Fermion', n_iw)
-    G_iw = BlockGf(mesh=iw_mesh, gf_struct=gf_struct)
+
+    G_iw_data = BlockGf(mesh=iw_mesh, gf_struct=gf_struct)
+    G_iw_error = BlockGf(mesh=iw_mesh, gf_struct=gf_struct)
 
     ### read out blocks from full w2dyn matrices
     offset = 0
-    for name, g_iw in G_iw:
+    for name, _ in G_iw_data:
 
-        size1 = G_iw[name].data.shape[-1]
-        size2 = G_iw[name].data.shape[-2]
+        size1, size2 = G_iw_data[name].target_shape
         assert( size1 == size2 )
         size_block = size1
-        giw_block = giw[offset:offset+size_block, offset:offset+size_block, :]
-        g_iw.data[:] = giw_block.transpose(2, 0, 1)
+
+        giw_block = giw[:, offset:offset+size_block, offset:offset+size_block]
+        giw_err_block = giw_err[:, offset:offset+size_block, offset:offset+size_block]
+
+        G_iw_data[name].data[:] = giw_block
+        G_iw_error[name].data[:] = giw_err_block
 
         offset += size_block
 
-    return G_iw
+    return G_iw_data, G_iw_error
 
 
 def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct,
