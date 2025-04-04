@@ -109,10 +109,11 @@ class Solver():
         n_warmup_cycles = params_kw.pop("n_warmup_cycles", 5000) ### default
         max_time = params_kw.pop("max_time", -1)
         selfenergy = params_kw.pop("selfenergy", "dyson")
-        worm = params_kw.pop("worm", selfenergy in ["improved_worm", "symmetric_improved_worm"]) # Improved estimators imply worm sampling
+        worm = params_kw.pop("worm", False)
         percentageworminsert = params_kw.pop("PercentageWormInsert", 0.20)
         percentagewormreplace = params_kw.pop("PercentageWormReplace", 0.20)
         wormcomponents = params_kw.pop("worm_components", None)
+        wormsampling = worm or (selfenergy in ["improved_worm", "symmetric_improved_worm"])
 
         length_cycle = params_kw.pop("length_cycle", 50)
         h_int = params_kw.pop("h_int")
@@ -216,7 +217,7 @@ TaudiffMax = -1.0""" % self.norb
             cfg["QMC"]["offdiag"] = 1
 
         ### complex worms are not yet existing
-        if self.complex and worm:
+        if self.complex and wormsampling:
             print('complex and worm together not yet implemented')
             exit()
 
@@ -265,26 +266,25 @@ TaudiffMax = -1.0""" % self.norb
         cfg["QMC"]["measurement_time"] = max_time
         cfg["QMC"]["NCorr"] = length_cycle
 
+        if statesampling:
+            cfg["QMC"]["statesampling"] = 1
+        else:
+            cfg["QMC"]["statesampling"] = 0
+
         if selfenergy == "improved_worm":
             cfg["QMC"]["WormMeasGSigmaiw"] = 1
             cfg["General"]["FTType"] = "none_worm"
         elif selfenergy == "symmetric_improved_worm":
             cfg["QMC"]["WormMeasQQ"] = 1
             cfg["General"]["FTType"] = "none_worm"
-
-        if statesampling:
-            cfg["QMC"]["statesampling"] = 1
-        else:
-            cfg["QMC"]["statesampling"] = 0
-
-        if worm:
-
+        elif worm:
             # Do not enable measurements if cfg_qmc is supplied in the solve call
             if not 'cfg_qmc' in params_kw:
                 cfg["QMC"]["WormMeasGiw"] = 1
                 cfg["QMC"]["WormMeasGtau"] = 1
                 cfg["QMC"]["WormSearchEta"] = 1
 
+        if wormsampling:
             ### set worm parameters to some default values if not set by user
             if percentageworminsert != 0.0:
                 cfg["QMC"]["PercentageWormInsert"] = percentageworminsert
@@ -380,7 +380,7 @@ TaudiffMax = -1.0""" % self.norb
                 giw = result.giw
                 siw = result.siw
 
-            elif not worm:
+            elif not wormsampling:
 
                 solver.set_problem(imp_problem)
                 solver.umatrix = U_ijkl
