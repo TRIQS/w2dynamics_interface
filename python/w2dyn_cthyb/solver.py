@@ -260,7 +260,7 @@ TaudiffMax = -1.0""" % self.norb
         cfg["QMC"]["Nwarmups"] = length_cycle * n_warmup_cycles
         cfg["QMC"]["Nmeas"] = n_cycles
         cfg["QMC"]["measurement_time"] = max_time
-        cfg["QMC"]["Ncorr"] = length_cycle
+        cfg["QMC"]["NCorr"] = length_cycle
 
         if statesampling:
             cfg["QMC"]["statesampling"] = 1
