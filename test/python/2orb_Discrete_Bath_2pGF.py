@@ -106,9 +106,9 @@ S.G0_iw << G0_iw
 # --------- Solve! ----------
 solve_params = {
     'h_int': h_int,
-    'n_warmup_cycles': 10000,
+    'n_warmup_cycles': 2000,
     'n_cycles': 1000,
-    'length_cycle': 20,
+    'length_cycle': 100,
     'measure_G2_iw_ph': True,
     'measure_G2_n_fermionic': 5,
     'measure_G2_n_bosonic': 5,

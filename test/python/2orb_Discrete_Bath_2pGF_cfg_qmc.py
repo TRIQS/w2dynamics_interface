@@ -120,9 +120,9 @@ WormComponents = WormComponents[worm_components - 1] # Select just the few compo
 
 solve_params = {
     'h_int': h_int,
-    'n_warmup_cycles': 10000,
+    'n_warmup_cycles': 2000,
     'n_cycles': 1000,
-    'length_cycle': 20,
+    'length_cycle': 100,
     'worm' : True,
     'cfg_qmc' : dict(
         WormEta=1,
