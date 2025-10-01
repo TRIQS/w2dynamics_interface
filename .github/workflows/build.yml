@@ -126,7 +126,7 @@ jobs:
     - name: Build w2dynamics_interface
       run: |
         source $HOME/install/share/triqs/triqsvars.sh
-        cmake -S . -B build -G Ninja
+        cmake -S . -B build
         cmake --build build --verbose
 
     - name: Test w2dynamics_interface
