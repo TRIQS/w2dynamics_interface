@@ -81,7 +81,7 @@ for (int i = 0; i < osxPlatforms.size(); i++) {
 
       checkout scm
 
-      def hdf5 = "${env.BREW}/opt/hdf5@1.10"
+      def hdf5 = "${env.BREW}/opt/hdf5"
       def openblas = "${env.BREW}/opt/openblas"
       dir(buildDir) { withEnv(platformEnv[1].collect { it.replace('\$BREW', env.BREW) } + [
           "PATH=$venv/bin:${env.BREW}/bin:/usr/bin:/bin:/usr/sbin",
@@ -92,6 +92,7 @@ for (int i = 0; i < osxPlatforms.size(); i++) {
           "DYLD_LIBRARY_PATH=$venv/lib:$hdf5/lib:${env.BREW}/lib",
           "PYTHONPATH=$installDir/lib/python3.13/site-packages",
           "CMAKE_PREFIX_PATH=$venv/lib/cmake/triqs",
+          "VIRTUAL_ENV=$venv",
           "OMP_NUM_THREADS=2",
           "BLAS_ROOT=$openblas",
           "LAPACK_ROOT=$openblas",
