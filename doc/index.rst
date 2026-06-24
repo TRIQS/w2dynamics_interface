@@ -5,8 +5,8 @@ The w2dynamics interface
 
 .. sidebar:: w2dynamics_interface 3.0.0
 
-   This is the homepage of w2dynamics_interface v3.0.0.
-   For changes see the :ref:`changelog page <changelog>`.
+   This is the homepage of w2dynamics_interface |PROJECT_VERSION|.
+   For changes see the :doc:`changelog page <ChangeLog>`.
       
       .. image:: _static/logo_github.png
          :width: 75%
@@ -30,5 +30,5 @@ Learn how to use w2dynamics_interface in the :ref:`documentation`.
    install
    documentation
    issues
-   ChangeLog.md
+   ChangeLog
    about

@@ -22,5 +22,7 @@ foreach(test ${all_tests})
       $<$<BOOL:${USE_LIBCXX}>:--libcxx>
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${test_dir}
   )
-  set_property(TEST Py_${test_name} APPEND PROPERTY ENVIRONMENT PYTHONPATH=${PROJECT_BINARY_DIR}/python:${w2dynamics_SOURCE_DIR}:$ENV{PYTHONPATH})
+  set_property(TEST Py_${test_name} APPEND PROPERTY ENVIRONMENT_MODIFICATION
+    "PYTHONPATH=path_list_prepend:${PROJECT_BINARY_DIR}/python"
+    "PYTHONPATH=path_list_prepend:${w2dynamics_SOURCE_DIR}")
 endforeach()
