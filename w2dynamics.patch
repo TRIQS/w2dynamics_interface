@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e8a819a..70c941d 100644
+index e8a819a..0549609 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -52,15 +52,6 @@ SET( CMAKE_Fortran_FLAGS             "${CMAKE_Fortran_FLAGS} -DLAPACK77_Interfac
@@ -96,7 +96,23 @@ index e8a819a..70c941d 100644
  
  # Define the executable name
  SET(CTQMCEXE ctqmc)
-@@ -200,7 +152,7 @@ enable_testing()
+@@ -188,9 +140,12 @@ ADD_CUSTOM_TARGET(distclean
+     COMMAND ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/distclean.cmake
+ )
+ 
+-ADD_SUBDIRECTORY(testsuite/mtrng.tests)
+-ADD_SUBDIRECTORY(testsuite/maxent.tests)
+-ADD_SUBDIRECTORY(testsuite/ctqmc.tests)
++# w2dynamics' internal Fortran/C++ test executables are not needed by the
++# triqs interface and break the link on libc++ toolchains (the Fortran linker
++# does not pull in libc++abi, leaving operator new/delete undefined). Disabled.
++#ADD_SUBDIRECTORY(testsuite/mtrng.tests)
++#ADD_SUBDIRECTORY(testsuite/maxent.tests)
++#ADD_SUBDIRECTORY(testsuite/ctqmc.tests)
+ ADD_SUBDIRECTORY(testsuite/w2dyn.tests)
+ enable_testing()
+ 
+@@ -200,7 +155,7 @@ enable_testing()
  message(STATUS "Configuration for installation (optional):")
  
  # default / fallback paths relative to CMAKE_INSTALL_PREFIX
@@ -105,7 +121,7 @@ index e8a819a..70c941d 100644
  set(INSTALL_PATH_SCRIPTS "bin")
  
  if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-@@ -246,7 +198,7 @@ option(INSTALL_EXECUTABLES "Install executable scripts DMFT.py, cthyb, Maxent.py
+@@ -246,7 +201,7 @@ option(INSTALL_EXECUTABLES "Install executable scripts DMFT.py, cthyb, Maxent.py
  message(STATUS "Installing executable scripts DMFT.py, cthyb, Maxent.py, hgrep (option INSTALL_EXECUTABLES): ${INSTALL_EXECUTABLES}")
  
  install(DIRECTORY w2dyn
