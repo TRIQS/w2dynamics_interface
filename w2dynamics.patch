@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e8a819a..d45de97 100644
+index e8a819a..70c941d 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -52,15 +52,6 @@ SET( CMAKE_Fortran_FLAGS             "${CMAKE_Fortran_FLAGS} -DLAPACK77_Interfac
@@ -43,7 +43,12 @@ index e8a819a..d45de97 100644
            "import numpy.f2py; print(numpy.f2py.get_include())"
    RESULT_VARIABLE GET_INCLUDE_FAILED
    OUTPUT_VARIABLE F2PY_INCLUDE_DIR
-@@ -124,42 +107,11 @@ target_link_libraries(fortranobject PUBLIC Python::NumPy)
+@@ -120,46 +103,15 @@ if (${GET_INCLUDE_FAILED})
+ endif(${GET_INCLUDE_FAILED})
+ 
+ add_library(fortranobject OBJECT "${F2PY_INCLUDE_DIR}/fortranobject.c")
+-target_link_libraries(fortranobject PUBLIC Python::NumPy)
++target_link_libraries(fortranobject PUBLIC Python::NumPy Python::Module)
  target_include_directories(fortranobject PUBLIC "${F2PY_INCLUDE_DIR}")
  set_property(TARGET fortranobject PROPERTY POSITION_INDEPENDENT_CODE ON)
  
@@ -398,3 +403,16 @@ index c592d91..18a3414 100644
  add_test(NAME 1-syntax_check
 -         COMMAND ${PYTHON_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR})
 +         COMMAND ${Python_EXECUTABLE} -m compileall ${PROJECT_SOURCE_DIR})
+diff --git a/w2dyn/auxiliaries/transform.py b/w2dyn/auxiliaries/transform.py
+index dda94bc..1630a04 100644
+--- a/w2dyn/auxiliaries/transform.py
++++ b/w2dyn/auxiliaries/transform.py
+@@ -31,7 +31,7 @@ def _trapez_weights(taus):
+ 
+ def _ensurebeta(beta):
+     """ Helper for sanity check on beta """
+-    beta = float(beta)
++    beta = float(np.squeeze(beta))
+     assert beta > _eps, "Beta must be positive"
+     return beta
+ 
