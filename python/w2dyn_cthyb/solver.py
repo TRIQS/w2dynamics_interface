@@ -358,6 +358,12 @@ TaudiffMax = -1.0""" % self.norb
             muimp = np.real(t_osos_tensor)
             U_ijkl = np.real(U_ijkl)
 
+        ### w2dynamics builds the interaction from its own configuration file,
+        ### which is only used for the moments of the self-energy, while the
+        ### solver itself uses the umatrix attribute; replace both by the
+        ### interaction from TRIQS
+        atom.dd_int.u_matrix = U_ijkl.reshape([self.norb, 2] * 4)
+
         ### here the properties of the impurity will be defined
         imp_problem = impurity.ImpurityProblem(
             self.beta, g0inviw, fiw, fmom, ftau,
@@ -387,7 +393,6 @@ TaudiffMax = -1.0""" % self.norb
 
             if self.complex:
                 solver.set_problem(imp_problem)
-                solver.umatrix = U_ijkl
                 result = solver.solve(mccfgcontainer)
                 result.postprocessing(siw_method, smom_method)
                 gtau = result.other["gtau-full"]
@@ -397,7 +402,6 @@ TaudiffMax = -1.0""" % self.norb
             elif not wormsampling:
 
                 solver.set_problem(imp_problem)
-                solver.umatrix = U_ijkl
                 result = solver.solve(iter_no, mccfgcontainer)
                 result.postprocessing(siw_method, smom_method)
                 gtau = result.other["gtau-full"]
@@ -443,7 +447,6 @@ TaudiffMax = -1.0""" % self.norb
                 for comp_ind in components:
 
                     solver.set_problem(imp_problem)
-                    solver.umatrix = U_ijkl
                     result_aux, result = solver.solve_component(1, 2, comp_ind, mccfgcontainer)
                     result.postprocessing(siw_method, smom_method)
 
@@ -533,7 +536,6 @@ TaudiffMax = -1.0""" % self.norb
                         print('='*72)
 
                     solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
-                    solver.umatrix = U_ijkl
                     result_gen, result_comp = \
                         solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
                     g4iw_keys = [ key for key in result_comp.other.keys() if 'g4iw-worm' in key ]
@@ -627,8 +629,6 @@ TaudiffMax = -1.0""" % self.norb
                         print('='*72)
 
                     solver.set_problem(imp_problem)
-
-                    solver.umatrix = U_ijkl
                     result_gen, result_comp = \
                         solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
                     keys = [ key for key in result_comp.other.keys() if result_key in key ]
@@ -680,7 +680,6 @@ TaudiffMax = -1.0""" % self.norb
                     print('Sampling worm component {}'.format(icomponent))
 
                 solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
-                solver.umatrix = U_ijkl
                 res_gen, res_g4comp = solver.solve_comp_stats(1, 4,
                                                               icomponent,
                                                               mccfgcontainer)
