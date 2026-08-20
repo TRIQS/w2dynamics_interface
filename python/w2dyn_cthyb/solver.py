@@ -745,8 +745,8 @@ TaudiffMax = -1.0""" % self.norb
             self.hist = result.other["hist"]
             #print 'hist.shape', hist.shape
 
-        ### GF in Legendre expansion
-        if measure_G_l:
+        ### GF in Legendre expansion, only sampled in the partition function space
+        if measure_G_l and not wormsampling:
             self.G_l = result.other["gleg-full"]
             #print 'G_l.shape', G_l.shape
 
