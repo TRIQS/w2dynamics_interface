@@ -338,6 +338,13 @@ TaudiffMax = -1.0""" % self.norb
             cfg["QMC"][key] = value
             if mpi.rank == 0: print(f'cfg["QMC"][{key}] = {value}')
 
+        ### the Fortran solver terminates the process instead of raising
+        if wormsampling and worm_get_sector_index(cfg["QMC"]) > 2 \
+                        and cfg["QMC"]["offdiag"] != 0:
+            raise NotImplementedError("Worm sampling beyond the one-particle "
+                                      "Green's function requires a diagonal "
+                                      "hybridization function")
+
         ### w2dynamics bakes the number of measurements into the solver at
         ### construction time, so the components have to be known before that
         if wormsampling and worm_get_sector_index(cfg["QMC"]) in [2, 3, 10]:
@@ -503,9 +510,8 @@ TaudiffMax = -1.0""" % self.norb
 
                 ### w2dynamics samples the improved estimator for every
                 ### component, builds the Green's function from it and takes
-                ### the self-energy from the Dyson equation. Its improved
-                ### estimator branches only differ in refusing an offdiagonal
-                ### hybridization, so ask for the Dyson equation directly.
+                ### the self-energy from the Dyson equation, which its improved
+                ### estimator code paths do as well, so ask for it directly.
                 result, result_worm = solver.solve_worm(iter_no, log_function=mpi.report)
                 result.postprocessing("dyson", smom_method)
 
