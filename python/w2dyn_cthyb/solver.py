@@ -119,8 +119,12 @@ class Solver():
         selfenergy : str, optional
             estimator for the Green's function and the self-energy, one of
             `dyson`, `improved_worm` or `symmetric_improved_worm`. Default
-            `dyson`. The improved estimators imply worm sampling and do not
-            provide `G_tau` and `G_l`.
+            `dyson`. The improved estimators imply worm sampling, require a
+            diagonal hybridization function and do not provide `G_tau` and
+            `G_l`. Beware that `improved_worm` is only correct for a single
+            orbital with a density-density interaction, because w2dynamics
+            hardcodes the sparsity of that interaction in the normalization of
+            its estimator. `symmetric_improved_worm` does not have this defect.
         cfg_qmc : dict, optional
             set W2Dynamics formatted parameters manually, see https://arxiv.org/abs/1801.10209
         """
