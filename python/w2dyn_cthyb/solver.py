@@ -24,7 +24,7 @@ from scipy.linalg import block_diag
 import triqs.utility.mpi as mpi
 
 from triqs.gf import Fourier
-from triqs.gf import MeshImTime, MeshImFreq, BlockGf
+from triqs.gf import MeshImTime, MeshImFreq, BlockGf, iOmega_n
 from triqs.gf.tools import conjugate
 from triqs.gf.block_gf import fix_gf_struct_type
 from triqs.operators.util.extractors import *
@@ -41,6 +41,7 @@ from .converters import NO_to_Nos
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
 from .converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
+from .converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
 from .converters import w2dyn_g4iw_worm_to_triqs_block2gf
 from .extractor import extract_deltaiw_and_tij_from_G0
 
@@ -152,6 +153,9 @@ class Solver():
 
         if self.delta_interface:
             t_ij_matrix = dict_to_matrix(extract_h_dict(h_0), self.gf_struct)
+
+            Delta_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
+            Delta_iw << Fourier(self.Delta_tau)
         else:
             Delta_iw, t_ij_lst = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
 
@@ -163,6 +167,18 @@ class Solver():
             #      "For now t_ij_lst must not contain more than 4 blocks; generalize it!"
             t_ij_matrix = block_diag(*t_ij_lst)
             self.Delta_infty = t_ij_lst
+
+        ### w2dynamics needs the inverse bare propagator to extract the
+        ### self-energy from the Dyson equation
+        G0_iw_inv = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
+        offset = 0
+        for bl, g in G0_iw_inv:
+            size = g.target_shape[0]
+            g << iOmega_n - t_ij_matrix[offset:offset+size, offset:offset+size] \
+                          - Delta_iw[bl]
+            offset += size
+
+        g0inviw, _, __ = triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G0_iw_inv)
 
         # in w2dyn Delta is a hole propagator
         for bl, Delta_bl in self.Delta_tau:
@@ -325,7 +341,6 @@ TaudiffMax = -1.0""" % self.norb
 
         ### generate dummy input that we don't necessarily need
         niw     = 2*cfg["QMC"]["Niw"]
-        g0inviw = np.zeros(shape=(2*self.n_iw, self.norb, 2, self.norb, 2))
         fiw     = np.zeros(shape=(2*self.n_iw, self.norb, 2, self.norb, 2))
         fmom    = np.zeros(shape=(2, self.norb, 2, self.norb, 2))
         symmetry_moves = ()
@@ -337,7 +352,6 @@ TaudiffMax = -1.0""" % self.norb
         if self.complex:
             muimp = t_osos_tensor
         else:
-            g0inviw = np.real(g0inviw)
             fiw = np.real(fiw)
             fmom = np.real(fmom)
             ftau = np.real(ftau)
