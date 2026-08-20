@@ -120,7 +120,11 @@ if mpi.is_master_node():
         results["G_tau"] = S.G_tau
         results["Sigma_iw"] = S.Sigma_iw
 
+# The self-energy amplifies the small difference between the two interfaces in
+# the Green's function by the square of the Matsubara frequency
 if args.libcxx:
-    h5diff("SIAM_Discrete_Bath.libcxx.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5")
+    h5diff("SIAM_Discrete_Bath.libcxx.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5",
+       precision=1.e-4)
 else:
-    h5diff("SIAM_Discrete_Bath.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5")
+    h5diff("SIAM_Discrete_Bath.ref.h5","SIAM_Discrete_Bath.delta_interface.out.h5",
+       precision=1.e-4)
