@@ -434,6 +434,7 @@ TaudiffMax = -1.0""" % self.norb
         siw_method = cfg["General"]["SelfEnergy"]
         smom_method = cfg["General"]["siw_moments"]
         iter_no = 1
+        gtau = giw = siw = None
         if measure_G_tau or measure_G_l or measure_pert_order:
 
             if self.complex:
@@ -513,10 +514,6 @@ TaudiffMax = -1.0""" % self.norb
                 g4iw_shape = (1, len(fmesh), len(fmesh), len(bmesh))
 
                 self.G2_worm_components = []
-
-                # Not used but has to be created..
-                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
-                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
                 # Required variables for the w2dynamics DMFT interface
                 iimp = 0
@@ -606,10 +603,6 @@ TaudiffMax = -1.0""" % self.norb
                     raise NotImplementedError
 
                 self.GF_worm_components = []
-
-                # Not used but has to be created..
-                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
-                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
                 # Required variables for the w2dynamics DMFT interface
                 iimp = 0
@@ -723,10 +716,11 @@ TaudiffMax = -1.0""" % self.norb
 
 
         ### here comes the function for conversion w2dyn --> triqs
-        if measure_G_tau:
+        if gtau is not None:
             self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
                 gtau, self.beta, self.gf_struct)
 
+        if giw is not None:
             self.G_iw, self.G_iw_error = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(
                 giw, self.n_iw, self.beta, self.gf_struct)
 
