@@ -45,6 +45,20 @@ from .converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
 from .converters import w2dyn_g4iw_worm_to_triqs_block2gf
 from .extractor import extract_deltaiw_and_tij_from_G0
 
+def nonzero_worm_components(ftau, norb):
+    """Return the one-particle worm components for which the hybridization
+    function does not vanish."""
+
+    from w2dyn.auxiliaries.compound_index import index2component_general
+
+    components = []
+    for index in range(1, (2*norb)**2 + 1):
+        _, bands, spins = index2component_general(norb, 2, index)
+        if np.any(np.abs(ftau[:, bands[0], spins[0], bands[1], spins[1]]) > 1e-5):
+            components.append(index)
+
+    return components
+
 class Solver():
 
     def __init__(self, beta, gf_struct, n_iw=1025, n_tau=10001, n_l=30, delta_interface=False, complex=False):
@@ -317,6 +331,15 @@ TaudiffMax = -1.0""" % self.norb
             cfg["QMC"][key] = value
             if mpi.rank == 0: print(f'cfg["QMC"][{key}] = {value}')
 
+        ### w2dynamics bakes the number of measurements into the solver at
+        ### construction time, so the components have to be known before that
+        if wormsampling and worm_get_sector_index(cfg["QMC"]) in [2, 3, 10]:
+            if cfg["QMC"]["WormComponents"] is None:
+                cfg["QMC"]["WormComponents"] = nonzero_worm_components(ftau, self.norb)
+
+            ### the measurements are divided among the components
+            cfg["QMC"]["Nmeas"] //= len(cfg["QMC"]["WormComponents"])
+
         if mpi.rank == 0:
             print(' ')
             print('specifications for w2dyn:')
@@ -414,37 +437,7 @@ TaudiffMax = -1.0""" % self.norb
 
                 from w2dyn.auxiliaries.compound_index import index2component_general
 
-                components = []
-
-                for comp_ind in range(1, (2*self.norb)**2+1):
-
-                    tmp = index2component_general(self.norb, 2, int(comp_ind))
-
-                    ### check if ftau is nonzero
-
-                    bands = tmp[1]
-                    spins = tmp[2]
-
-                    b1 = bands[0]
-                    b2 = bands[1]
-                    s1 = spins[0]
-                    s2 = spins[1]
-
-                    all_zeros = not np.any(np.abs(ftau[:, b1, s1, b2, s2]) > 1e-5)
-
-                    if not all_zeros:
-                        components = np.append(components, comp_ind)
-
-                if mpi.rank == 0:
-                    print('worm components to measure: ', components)
-
-                ### divide either max_time Nmeas among the nonzero components
-                if max_time <= 0:
-                    cfg["QMC"]["Nmeas"] = int(cfg["QMC"]["Nmeas"] / float(len(components)))
-                else:
-                    cfg["QMC"]["measurement_time"] = int(float(max_time) / float(len(components)))
-
-                for comp_ind in components:
+                for comp_ind in map(int, cfg["QMC"]["WormComponents"]):
 
                     solver.set_problem(imp_problem)
                     result_aux, result = solver.solve_component(1, 2, comp_ind, mccfgcontainer)
