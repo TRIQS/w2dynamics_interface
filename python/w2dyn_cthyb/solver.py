@@ -304,9 +304,11 @@ TaudiffMax = -1.0""" % self.norb
         if selfenergy == "improved_worm":
             cfg["QMC"]["WormMeasGSigmaiw"] = 1
             cfg["General"]["FTType"] = "none_worm"
+            cfg["QMC"]["WormSearchEta"] = 1
         elif selfenergy == "symmetric_improved_worm":
             cfg["QMC"]["WormMeasQQ"] = 1
             cfg["General"]["FTType"] = "none_worm"
+            cfg["QMC"]["WormSearchEta"] = 1
         elif worm:
             # Do not enable measurements if cfg_qmc is supplied in the solve call
             if not 'cfg_qmc' in params_kw:
@@ -492,13 +494,18 @@ TaudiffMax = -1.0""" % self.norb
                 giw = result.giw
                 siw = result.siw
 
-            elif worm_get_sector_index(cfg['QMC']) == 3:
+            elif worm_get_sector_index(cfg['QMC']) in [3, 10]:
 
-                raise NotImplementedError("improved_worm")
+                ### w2dynamics samples the improved estimator for every
+                ### component, builds the Green's function from it and takes
+                ### the self-energy from the Dyson equation. Its improved
+                ### estimator branches only differ in refusing an offdiagonal
+                ### hybridization, so ask for the Dyson equation directly.
+                result, result_worm = solver.solve_worm(iter_no, log_function=mpi.report)
+                result.postprocessing("dyson", smom_method)
 
-            elif worm_get_sector_index(cfg['QMC']) == 10:
-
-                raise NotImplementedError("symmetric_improved_worm")
+                giw = result.giw
+                siw = result.siw
 
             elif cfg["QMC"]["FourPnt"] == 8: # Know that: worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
