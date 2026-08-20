@@ -8,6 +8,7 @@ endforeach()
 set(all_tests
   exctractor_test
   SIAM_Discrete_Bath
+  SIAM_improved_estimators
   2orb_Discrete_Bath
   2orb_Discrete_Bath_2pGF
   2orb_Discrete_Bath_2pGF_cfg_qmc
