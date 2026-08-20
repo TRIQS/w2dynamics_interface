@@ -116,6 +116,11 @@ class Solver():
             quartic local interaction Hamiltonian
         h_0 : triqs.operators.Operator, optional
             quadratic part of the local Hamiltonian, required when `delta_interface=True`.
+        selfenergy : str, optional
+            estimator for the Green's function and the self-energy, one of
+            `dyson`, `improved_worm` or `symmetric_improved_worm`. Default
+            `dyson`. The improved estimators imply worm sampling and do not
+            provide `G_tau` and `G_l`.
         cfg_qmc : dict, optional
             set W2Dynamics formatted parameters manually, see https://arxiv.org/abs/1801.10209
         """
