@@ -407,6 +407,28 @@ TaudiffMax = -1.0""" % self.norb
         ### feed impurity problem into solver
         solver.set_problem(imp_problem)
 
+        def bs_diagflat(bs_array):
+            """Return an array with a shape extended compared to
+            that of the argument by doubling the first two axes and
+            fill it such that the returned array is diagonal with
+            respect to both pairs (axes 1 and 3 and axes 2 and 4).
+            """
+            shape_bsonly = bs_array.shape[0:2]
+            bsbs_shape = shape_bsonly + bs_array.shape
+            bsbs_array = np.zeros(bsbs_shape, dtype=bs_array.dtype)
+            for b in range(bs_array.shape[0]):
+                for s in range(bs_array.shape[1]):
+                    bsbs_array[b, s, b, s, ...] = bs_array[b, s, ...]
+            return bsbs_array
+
+        def z_space_gtau(result):
+            """Read the Green's function from the partition function space.
+            w2dynamics only fills the full accumulator for an offdiagonal
+            hybridization."""
+            if cfg["QMC"]["offdiag"] == 0:
+                return result.other["gtau"].apply(bs_diagflat)
+            return result.other["gtau-full"]
+
         ### solve impurity problem
         mccfgcontainer = []
         siw_method = cfg["General"]["SelfEnergy"]
@@ -418,7 +440,7 @@ TaudiffMax = -1.0""" % self.norb
                 solver.set_problem(imp_problem)
                 result = solver.solve(mccfgcontainer)
                 result.postprocessing(siw_method, smom_method)
-                gtau = result.other["gtau-full"]
+                gtau = z_space_gtau(result)
                 giw = result.giw
                 siw = result.siw
 
@@ -427,7 +449,7 @@ TaudiffMax = -1.0""" % self.norb
                 solver.set_problem(imp_problem)
                 result = solver.solve(iter_no, mccfgcontainer)
                 result.postprocessing(siw_method, smom_method)
-                gtau = result.other["gtau-full"]
+                gtau = z_space_gtau(result)
                 giw = result.giw
                 siw = result.siw
 
@@ -700,27 +722,8 @@ TaudiffMax = -1.0""" % self.norb
             return g4iw
 
 
-        def bs_diagflat(bs_array):
-            """Return an array with a shape extended compared to
-            that of the argument by doubling the first two axes and
-            fill it such that the returned array is diagonal with
-            respect to both pairs (axes 1 and 3 and axes 2 and 4).
-            """
-            shape_bsonly = bs_array.shape[0:2]
-            bsbs_shape = shape_bsonly + bs_array.shape
-            bsbs_array = np.zeros(bsbs_shape, dtype=bs_array.dtype)
-            for b in range(bs_array.shape[0]):
-                for s in range(bs_array.shape[1]):
-                    bsbs_array[b, s, b, s, ...] = bs_array[b, s, ...]
-            return bsbs_array
-
-
-
         ### here comes the function for conversion w2dyn --> triqs
         if measure_G_tau:
-            if cfg["QMC"]["offdiag"] == 0 and worm == 0:
-                gtau = result.other["gtau"].apply(bs_diagflat)
-
             self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
                 gtau, self.beta, self.gf_struct)
 
