@@ -59,6 +59,19 @@ def nonzero_worm_components(ftau, norb):
 
     return components
 
+def worm_gtau(result, components, norb, n_tau):
+    """Assemble the Green's function in imaginary time from worm components."""
+
+    from w2dyn.auxiliaries.compound_index import index2component_general
+
+    gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*n_tau))
+    for index in map(int, components):
+        _, bands, spins = index2component_general(norb, 2, index)
+        gtau[0, bands[0], spins[0], bands[1], spins[1], :] = \
+            result.other['gtau-worm/{:05}'.format(index)].local[0]
+
+    return gtau
+
 class Solver():
 
     def __init__(self, beta, gf_struct, n_iw=1025, n_tau=10001, n_l=30, delta_interface=False, complex=False):
@@ -312,20 +325,20 @@ TaudiffMax = -1.0""" % self.norb
 
         if selfenergy == "improved_worm":
             cfg["QMC"]["WormMeasGSigmaiw"] = 1
-            cfg["General"]["FTType"] = "none_worm"
-            cfg["QMC"]["WormSearchEta"] = 1
         elif selfenergy == "symmetric_improved_worm":
             cfg["QMC"]["WormMeasQQ"] = 1
-            cfg["General"]["FTType"] = "none_worm"
-            cfg["QMC"]["WormSearchEta"] = 1
         elif worm:
             # Do not enable measurements if cfg_qmc is supplied in the solve call
             if not 'cfg_qmc' in params_kw:
                 cfg["QMC"]["WormMeasGiw"] = 1
                 cfg["QMC"]["WormMeasGtau"] = 1
-                cfg["QMC"]["WormSearchEta"] = 1
 
         if wormsampling:
+            ### the Green's function is assembled from the worm components
+            ### instead of being transformed from the partition function space
+            cfg["General"]["FTType"] = "none_worm"
+            cfg["QMC"]["WormSearchEta"] = 1
+
             ### set worm parameters to some default values if not set by user
             if percentageworminsert != 0.0:
                 cfg["QMC"]["PercentageWormInsert"] = percentageworminsert
@@ -472,55 +485,23 @@ TaudiffMax = -1.0""" % self.norb
                 giw = result.giw
                 siw = result.siw
 
-            elif worm_get_sector_index(cfg['QMC']) == 2:
+            elif worm_get_sector_index(cfg['QMC']) in [2, 3, 10]:
 
-                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
-
-                from w2dyn.auxiliaries.compound_index import index2component_general
-
-                for comp_ind in map(int, cfg["QMC"]["WormComponents"]):
-
-                    solver.set_problem(imp_problem)
-                    result_aux, result = solver.solve_component(1, 2, comp_ind, mccfgcontainer)
-                    result.postprocessing(siw_method, smom_method)
-
-                    for i in list(result.other.keys()):
-
-                        if "gtau-worm" in i:
-                            gtau_name = i
-
-                    tmp = index2component_general(self.norb, 2, int(comp_ind))
-
-                    ### check if ftau is nonzero
-
-                    bands = tmp[1]
-                    spins = tmp[2]
-
-                    b1 = bands[0]
-                    b2 = bands[1]
-                    s1 = spins[0]
-                    s2 = spins[1]
-
-                    # Remove axis 0 from local samples by averaging, so
-                    # no data remains unused even if there is more than
-                    # one local sample (should not happen)
-                    gtau[0, b1, s1, b2, s2, :] = result.other[gtau_name]
-
-                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
-                giw = result.giw
-                siw = result.siw
-
-            elif worm_get_sector_index(cfg['QMC']) in [3, 10]:
-
-                ### w2dynamics samples the improved estimator for every
-                ### component, builds the Green's function from it and takes
-                ### the self-energy from the Dyson equation, which its improved
-                ### estimator code paths do as well, so ask for it directly.
+                ### w2dynamics samples the estimator of the sector for every
+                ### component and assembles the Green's function from them. The
+                ### self-energy always comes from the Dyson equation, also in
+                ### the improved estimator code paths, so ask for it directly.
                 result, result_worm = solver.solve_worm(iter_no, log_function=mpi.report)
                 result.postprocessing("dyson", smom_method)
 
                 giw = result.giw
                 siw = result.siw
+
+                if cfg["QMC"]["WormMeasGtau"] != 0:
+                    gtau = stat.DistributedSample(
+                        worm_gtau(result_worm, cfg["QMC"]["WormComponents"],
+                                  self.norb, self.n_tau),
+                        mpi_comm, ntotal=mpi.size)
 
             elif cfg["QMC"]["FourPnt"] == 8: # Know that: worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
