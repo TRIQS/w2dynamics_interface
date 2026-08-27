@@ -134,10 +134,10 @@ class Solver():
             `dyson`, `improved_worm` or `symmetric_improved_worm`. Default
             `dyson`. The improved estimators imply worm sampling, require a
             diagonal hybridization function and do not provide `G_tau` and
-            `G_l`. Beware that `improved_worm` is only correct for a single
-            orbital with a density-density interaction, because w2dynamics
-            hardcodes the sparsity of that interaction in the normalization of
-            its estimator. `symmetric_improved_worm` does not have this defect.
+            `G_l`. `improved_worm` is refused for more than one orbital, because
+            w2dynamics hardcodes the sparsity of a single orbital interaction in
+            the normalization of its estimator. `symmetric_improved_worm` does
+            not have this defect.
         cfg_qmc : dict, optional
             set W2Dynamics formatted parameters manually, see https://arxiv.org/abs/1801.10209
         """
@@ -186,6 +186,12 @@ class Solver():
         U_ijkl = U_ijkl.reshape(2,self.norb, 2,self.norb, 2,self.norb, 2,self.norb)
         U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
         U_ijkl = U_ijkl.reshape(self.norb*2, self.norb*2, self.norb*2, self.norb*2)
+
+        if selfenergy == "improved_worm" and self.norb != 1:
+            raise NotImplementedError(
+                "w2dynamics normalizes the improved estimator with the sparsity "
+                "of the interaction matrix of a single orbital. Use the symmetric "
+                "improved estimator instead")
 
         if self.delta_interface:
             t_ij_matrix = dict_to_matrix(extract_h_dict(h_0), self.gf_struct)
