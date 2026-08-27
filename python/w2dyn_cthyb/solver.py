@@ -144,7 +144,6 @@ class Solver():
 
         n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
         n_warmup_cycles = params_kw.pop("n_warmup_cycles", 5000) ### default
-        max_time = params_kw.pop("max_time", -1)
         selfenergy = params_kw.pop("selfenergy", "dyson")
         worm = params_kw.pop("worm", False)
         percentageworminsert = params_kw.pop("PercentageWormInsert", 0.20)
@@ -321,7 +320,6 @@ TaudiffMax = -1.0""" % self.norb
 
         cfg["QMC"]["Nwarmups"] = length_cycle * n_warmup_cycles
         cfg["QMC"]["Nmeas"] = n_cycles
-        cfg["QMC"]["measurement_time"] = max_time
         cfg["QMC"]["NCorr"] = length_cycle
 
         if statesampling:
