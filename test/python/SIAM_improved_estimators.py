@@ -46,6 +46,13 @@ for selfenergy in ['dyson', 'improved_worm', 'symmetric_improved_worm']:
     else:
         assert not hasattr(S, 'G_tau')
 
+    # The self-energy has to be the Dyson equation of the Green's function that
+    # the solver returned and of the bare propagator it was given
+    Sigma_dyson = S.Sigma_iw.copy()
+    for bl, sigma in Sigma_dyson:
+        sigma << inverse(G0_iw[bl]) - inverse(S.G_iw[bl])
+    assert_block_gfs_are_close(S.Sigma_iw, Sigma_dyson, precision=1.e-8)
+
     G_iw[selfenergy] = S.G_iw.copy()
 
 for selfenergy in ['improved_worm', 'symmetric_improved_worm']:
