@@ -31,7 +31,8 @@ for selfenergy in ['dyson', 'improved_worm', 'symmetric_improved_worm']:
             n_warmup_cycles=1000,               # Warmup cycles
             selfenergy=selfenergy)              # Estimator for the self-energy
 
-    results[selfenergy] = {"G_iw": S.G_iw, "Sigma_iw": S.Sigma_iw}
+    results[selfenergy] = {"G_iw": S.G_iw, "Sigma_iw": S.Sigma_iw,
+                           "Sigma_moments": S.Sigma_moments}
 
 # Save the results in an HDF5 file (only on the master node)
 if mpi.is_master_node():

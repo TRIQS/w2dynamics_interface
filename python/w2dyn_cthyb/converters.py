@@ -355,6 +355,42 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw_wosos, n_iw, beta, gf_struct)
     return G_iw_data, G_iw_error
 
 
+# ----------------------------------------------------------------------
+def w2dyn_ndarray_to_triqs_moments_mosos(smom_mosos, gf_struct):
+
+    """ Convert a W2Dynamics ndarray format with indices [mosos]
+    where m is the moment, o is orbital, s is spin index
+    to the high frequency moments of a block Triqs response function
+
+    Takes:
+    smom_mosos : moments as DistributedSample
+    gf_struct: block structure of the triqs GF
+
+    Returns:
+    dict : the moments of every block, the zeroth one being the Hartree shift
+    """
+
+    smom = smom_mosos.mean()
+
+    n_mom, norbs, nspin = smom.shape[:3]
+    nflavour = norbs * nspin
+
+    ### spin is fastest running index in w2dyn, but slowest in triqs
+    smom = smom.transpose(0,2,1,4,3).reshape(n_mom, nflavour, nflavour)
+
+    ### read out blocks from full w2dyn matrices
+    moments = {}
+    offset = 0
+    for name, size_block in gf_struct:
+
+        moments[name] = smom[:, offset:offset+size_block,
+                                offset:offset+size_block].copy()
+
+        offset += size_block
+
+    return moments
+
+
 def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct,
                                       qtype=(lambda x: x.mean())):
     """Converts a dictionary mapping zero-padded five digits long string

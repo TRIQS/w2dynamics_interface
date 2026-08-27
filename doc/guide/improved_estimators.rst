@@ -40,33 +40,30 @@ two bath sites. Here is the python :download:`script <improved_estimators.py>`:
 
 Running this script on a single processor takes about one and a half minutes and
 generates an HDF5 archive file called :file:`improved_estimators_solution.h5`
-holding the Green's function and the self-energy of each estimator. Let us plot
-them:
+holding the Green's function and the self-energy of each estimator.
 
-.. plot:: guide/improved_estimators_plot.py
-   :include-source:
-   :scale: 70
+Next to ``G_iw`` and ``Sigma_iw``, the solver also sets ``Sigma_moments``: a
+dictionary holding the high frequency moments of the self-energy of every block,
+where ``Sigma_moments[block][0]`` is the Hartree shift and
+``Sigma_moments[block][1]`` the next moment. w2dynamics obtains them from the
+one- and two-particle density matrix measured in the partition function space,
+which makes them independent of the estimator chosen for the self-energy and
+gives us a reference for where its tail has to go. Let us plot all of it:
+
+.. literalinclude:: improved_estimators_plot.py
 
 The three Green's functions are indistinguishable, as they have to be. The
 self-energies agree at low frequency, where they are needed most, but differ in
-the tail, which has to approach the constant Hartree shift. Averaged over the
-last twenty Matsubara frequencies of the spin-up component:
+the tail, which has to approach the Hartree shift that the density matrix gives
+us.
 
-============================= =================
-estimator                     :math:`\mathrm{Re}\, \Sigma` in the tail
-============================= =================
-``dyson``                     3.01 :math:`\pm` 0.04
-``improved_worm``             2.65 :math:`\pm` 0.19
-``symmetric_improved_worm``   2.76 :math:`\pm` 0.01
-============================= =================
-
-The Dyson result is smooth but drifts upwards by 0.25 over the plotted window,
-six times its own scatter: a systematic error, inherited from the truncated
-Legendre representation of the Green's function and amplified by the inversion.
-Both improved estimators are flat instead, and the symmetric one is flat to
-within 0.01. The plain improved estimator is unbiased as well, but its scatter
-is an order of magnitude larger, so the symmetric one is the better choice
-unless there is a reason to prefer :math:`G \Sigma` itself.
+The Dyson result is smooth but sits above the Hartree shift, several times its
+own scatter: a systematic error, inherited from the truncated Legendre
+representation of the Green's function and amplified by the inversion. Both
+improved estimators land on the Hartree shift instead, the symmetric one to
+within very small margin. The plain improved estimator is unbiased as well, but
+its scatter is an order of magnitude larger, so the symmetric one is the better
+choice unless there is a reason to prefer :math:`G \Sigma` itself.
 
 Restrictions
 ------------
@@ -76,7 +73,8 @@ self-energy:
 
 * The Green's function in imaginary time and in the Legendre basis are not
   available, because they are accumulated in the partition function space that
-  worm sampling does not normalize. Only ``G_iw`` and ``Sigma_iw`` are set.
+  worm sampling does not normalize. Only ``G_iw``, ``Sigma_iw`` and
+  ``Sigma_moments`` are set.
 
 * The hybridization function has to be diagonal. w2dynamics does not implement
   worm sampling above the one-particle sector for an offdiagonal hybridization,

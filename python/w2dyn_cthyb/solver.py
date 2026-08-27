@@ -40,6 +40,7 @@ from w2dyn.auxiliaries import hdfout
 from .converters import NO_to_Nos
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
+from .converters import w2dyn_ndarray_to_triqs_moments_mosos
 from .converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
 from .converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
 from .converters import w2dyn_g4iw_worm_to_triqs_block2gf
@@ -469,7 +470,7 @@ TaudiffMax = -1.0""" % self.norb
         siw_method = cfg["General"]["SelfEnergy"]
         smom_method = cfg["General"]["siw_moments"]
         iter_no = 1
-        gtau = giw = siw = None
+        gtau = giw = siw = smom = None
         if measure_G_tau or measure_G_l or measure_pert_order:
 
             if self.complex:
@@ -479,6 +480,7 @@ TaudiffMax = -1.0""" % self.norb
                 gtau = z_space_gtau(result)
                 giw = result.giw
                 siw = result.siw
+                smom = result.smom
 
             elif not wormsampling:
 
@@ -488,6 +490,7 @@ TaudiffMax = -1.0""" % self.norb
                 gtau = z_space_gtau(result)
                 giw = result.giw
                 siw = result.siw
+                smom = result.smom
 
             elif worm_get_sector_index(cfg['QMC']) in [2, 3, 10]:
 
@@ -500,6 +503,7 @@ TaudiffMax = -1.0""" % self.norb
 
                 giw = result.giw
                 siw = result.siw
+                smom = result.smom
 
                 if cfg["QMC"]["WormMeasGtau"] != 0:
                     gtau = stat.DistributedSample(
@@ -733,6 +737,11 @@ TaudiffMax = -1.0""" % self.norb
 
             self.Sigma_iw, self.Sigma_iw_error = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(
                 siw, self.n_iw, self.beta, self.gf_struct)
+
+            ### high frequency moments of the self-energy, from the one- and
+            ### two-particle density matrix instead of from a fit of Sigma_iw
+            self.Sigma_moments = w2dyn_ndarray_to_triqs_moments_mosos(
+                smom, self.gf_struct)
 
         ### add perturbation order as observable
         #print 'measure_pert_order ', measure_pert_order

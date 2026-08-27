@@ -5,6 +5,7 @@
 
 from triqs.gf import BlockGf, MeshImFreq, inverse, iOmega_n
 from triqs.operators import n
+from triqs.utility.comparison_tests import assert_arrays_are_close
 from triqs.utility.comparison_tests import assert_block_gfs_are_close
 
 from w2dyn_cthyb import Solver
@@ -33,6 +34,7 @@ G0_iw['dn'] << inverse(iOmega_n + mu - h - Delta['dn'])
 
 # ==== Solve for every estimator ====
 G_iw = {}
+Sigma_moments = {}
 for selfenergy in ['dyson', 'improved_worm', 'symmetric_improved_worm']:
     S = Solver(beta=beta, gf_struct=gf_struct, n_iw=n_iw, n_tau=1000)
     S.G0_iw << G0_iw
@@ -54,6 +56,13 @@ for selfenergy in ['dyson', 'improved_worm', 'symmetric_improved_worm']:
     assert_block_gfs_are_close(S.Sigma_iw, Sigma_dyson, precision=1.e-8)
 
     G_iw[selfenergy] = S.G_iw.copy()
+    Sigma_moments[selfenergy] = S.Sigma_moments
 
 for selfenergy in ['improved_worm', 'symmetric_improved_worm']:
     assert_block_gfs_are_close(G_iw[selfenergy], G_iw['dyson'], precision=2.e-2)
+
+    # The moments of the self-energy come from the density matrix measured in
+    # the partition function space, which every estimator samples as well
+    for bl, moments in Sigma_moments['dyson'].items():
+        assert_arrays_are_close(Sigma_moments[selfenergy][bl], moments,
+                                precision=1.e-1)
