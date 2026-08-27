@@ -24,7 +24,7 @@ from scipy.linalg import block_diag
 import triqs.utility.mpi as mpi
 
 from triqs.gf import Fourier
-from triqs.gf import MeshImTime, MeshImFreq, BlockGf
+from triqs.gf import MeshImTime, MeshImFreq, BlockGf, iOmega_n
 from triqs.gf.tools import conjugate
 from triqs.gf.block_gf import fix_gf_struct_type
 from triqs.operators.util.extractors import *
@@ -40,9 +40,38 @@ from w2dyn.auxiliaries import hdfout
 from .converters import NO_to_Nos
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
+from .converters import w2dyn_ndarray_to_triqs_moments_mosos
 from .converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
+from .converters import triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw
 from .converters import w2dyn_g4iw_worm_to_triqs_block2gf
 from .extractor import extract_deltaiw_and_tij_from_G0
+
+def nonzero_worm_components(ftau, norb):
+    """Return the one-particle worm components for which the hybridization
+    function does not vanish."""
+
+    from w2dyn.auxiliaries.compound_index import index2component_general
+
+    components = []
+    for index in range(1, (2*norb)**2 + 1):
+        _, bands, spins = index2component_general(norb, 2, index)
+        if np.any(np.abs(ftau[:, bands[0], spins[0], bands[1], spins[1]]) > 1e-5):
+            components.append(index)
+
+    return components
+
+def worm_gtau(result, components, norb, n_tau):
+    """Assemble the Green's function in imaginary time from worm components."""
+
+    from w2dyn.auxiliaries.compound_index import index2component_general
+
+    gtau = np.zeros(shape=(1, norb, 2, norb, 2, 2*n_tau))
+    for index in map(int, components):
+        _, bands, spins = index2component_general(norb, 2, index)
+        gtau[0, bands[0], spins[0], bands[1], spins[1], :] = \
+            result.other['gtau-worm/{:05}'.format(index)].local[0]
+
+    return gtau
 
 class Solver():
 
@@ -101,17 +130,27 @@ class Solver():
             quartic local interaction Hamiltonian
         h_0 : triqs.operators.Operator, optional
             quadratic part of the local Hamiltonian, required when `delta_interface=True`.
+        selfenergy : str, optional
+            estimator for the Green's function and the self-energy, one of
+            `dyson`, `improved_worm` or `symmetric_improved_worm`. Default
+            `dyson`. The improved estimators imply worm sampling, require a
+            diagonal hybridization function and do not provide `G_tau` and
+            `G_l`. `improved_worm` is refused for more than one orbital, because
+            w2dynamics hardcodes the sparsity of a single orbital interaction in
+            the normalization of its estimator. `symmetric_improved_worm` does
+            not have this defect.
         cfg_qmc : dict, optional
             set W2Dynamics formatted parameters manually, see https://arxiv.org/abs/1801.10209
         """
 
         n_cycles = params_kw.pop("n_cycles")  ### what does the True or False mean?
         n_warmup_cycles = params_kw.pop("n_warmup_cycles", 5000) ### default
-        max_time = params_kw.pop("max_time", -1)
+        selfenergy = params_kw.pop("selfenergy", "dyson")
         worm = params_kw.pop("worm", False)
         percentageworminsert = params_kw.pop("PercentageWormInsert", 0.20)
         percentagewormreplace = params_kw.pop("PercentageWormReplace", 0.20)
         wormcomponents = params_kw.pop("worm_components", None)
+        wormsampling = worm or (selfenergy in ["improved_worm", "symmetric_improved_worm"])
 
         length_cycle = params_kw.pop("length_cycle", 50)
         h_int = params_kw.pop("h_int")
@@ -124,7 +163,7 @@ class Solver():
 
         random_seed = params_kw.pop("random_seed", 1)
         move_double = params_kw.pop("move_double", True)
-        measure_G_l = params_kw.pop("measure_G_l", False)
+        measure_G_l = params_kw.pop("measure_G_l", True)
         measure_G_tau = params_kw.pop("measure_G_tau", True)
         measure_pert_order = params_kw.pop("measure_pert_order", False)
         statesampling = params_kw.pop("statesampling", False)
@@ -148,8 +187,17 @@ class Solver():
         U_ijkl = U_ijkl.transpose(1,0, 3,2, 5,4, 7,6)
         U_ijkl = U_ijkl.reshape(self.norb*2, self.norb*2, self.norb*2, self.norb*2)
 
+        if selfenergy == "improved_worm" and self.norb != 1:
+            raise NotImplementedError(
+                "w2dynamics normalizes the improved estimator with the sparsity "
+                "of the interaction matrix of a single orbital. Use the symmetric "
+                "improved estimator instead")
+
         if self.delta_interface:
             t_ij_matrix = dict_to_matrix(extract_h_dict(h_0), self.gf_struct)
+
+            Delta_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
+            Delta_iw << Fourier(self.Delta_tau)
         else:
             Delta_iw, t_ij_lst = extract_deltaiw_and_tij_from_G0(self.G0_iw, self.gf_struct)
 
@@ -161,6 +209,18 @@ class Solver():
             #      "For now t_ij_lst must not contain more than 4 blocks; generalize it!"
             t_ij_matrix = block_diag(*t_ij_lst)
             self.Delta_infty = t_ij_lst
+
+        ### w2dynamics needs the inverse bare propagator to extract the
+        ### self-energy from the Dyson equation
+        G0_iw_inv = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
+        offset = 0
+        for bl, g in G0_iw_inv:
+            size = g.target_shape[0]
+            g << iOmega_n - t_ij_matrix[offset:offset+size, offset:offset+size] \
+                          - Delta_iw[bl]
+            offset += size
+
+        g0inviw, _, __ = triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G0_iw_inv)
 
         # in w2dyn Delta is a hole propagator
         for bl, Delta_bl in self.Delta_tau:
@@ -215,7 +275,7 @@ TaudiffMax = -1.0""" % self.norb
             cfg["QMC"]["offdiag"] = 1
 
         ### complex worms are not yet existing
-        if self.complex and worm:
+        if self.complex and wormsampling:
             print('complex and worm together not yet implemented')
             exit()
 
@@ -247,6 +307,8 @@ TaudiffMax = -1.0""" % self.norb
         ### in a more sophisticated way
 
         cfg["General"]["beta"] = self.beta
+        cfg["General"]["siw_moments"] = "estimate"
+        cfg["General"]["SelfEnergy"] = selfenergy
         cfg["QMC"]["Niw"] = self.n_iw
         cfg["QMC"]["Ntau"] = self.n_tau * 2 # use double resolution bins & down sample to Triqs l8r
 
@@ -259,7 +321,6 @@ TaudiffMax = -1.0""" % self.norb
 
         cfg["QMC"]["Nwarmups"] = length_cycle * n_warmup_cycles
         cfg["QMC"]["Nmeas"] = n_cycles
-        cfg["QMC"]["measurement_time"] = max_time
         cfg["QMC"]["NCorr"] = length_cycle
 
         if statesampling:
@@ -267,13 +328,21 @@ TaudiffMax = -1.0""" % self.norb
         else:
             cfg["QMC"]["statesampling"] = 0
 
-        if worm:
-
+        if selfenergy == "improved_worm":
+            cfg["QMC"]["WormMeasGSigmaiw"] = 1
+        elif selfenergy == "symmetric_improved_worm":
+            cfg["QMC"]["WormMeasQQ"] = 1
+        elif worm:
             # Do not enable measurements if cfg_qmc is supplied in the solve call
             if not 'cfg_qmc' in params_kw:
                 cfg["QMC"]["WormMeasGiw"] = 1
                 cfg["QMC"]["WormMeasGtau"] = 1
-                cfg["QMC"]["WormSearchEta"] = 1
+
+        if wormsampling:
+            ### the Green's function is assembled from the worm components
+            ### instead of being transformed from the partition function space
+            cfg["General"]["FTType"] = "none_worm"
+            cfg["QMC"]["WormSearchEta"] = 1
 
             ### set worm parameters to some default values if not set by user
             if percentageworminsert != 0.0:
@@ -290,6 +359,22 @@ TaudiffMax = -1.0""" % self.norb
         for key, value in manual_cfg_qmc.items():
             cfg["QMC"][key] = value
             if mpi.rank == 0: print(f'cfg["QMC"][{key}] = {value}')
+
+        ### the Fortran solver terminates the process instead of raising
+        if wormsampling and worm_get_sector_index(cfg["QMC"]) > 2 \
+                        and cfg["QMC"]["offdiag"] != 0:
+            raise NotImplementedError("Worm sampling beyond the one-particle "
+                                      "Green's function requires a diagonal "
+                                      "hybridization function")
+
+        ### w2dynamics bakes the number of measurements into the solver at
+        ### construction time, so the components have to be known before that
+        if wormsampling and worm_get_sector_index(cfg["QMC"]) in [2, 3, 10]:
+            if cfg["QMC"]["WormComponents"] is None:
+                cfg["QMC"]["WormComponents"] = nonzero_worm_components(ftau, self.norb)
+
+            ### the measurements are divided among the components
+            cfg["QMC"]["Nmeas"] //= len(cfg["QMC"]["WormComponents"])
 
         if mpi.rank == 0:
             print(' ')
@@ -315,7 +400,6 @@ TaudiffMax = -1.0""" % self.norb
 
         ### generate dummy input that we don't necessarily need
         niw     = 2*cfg["QMC"]["Niw"]
-        g0inviw = np.zeros(shape=(2*self.n_iw, self.norb, 2, self.norb, 2))
         fiw     = np.zeros(shape=(2*self.n_iw, self.norb, 2, self.norb, 2))
         fmom    = np.zeros(shape=(2, self.norb, 2, self.norb, 2))
         symmetry_moves = ()
@@ -327,12 +411,17 @@ TaudiffMax = -1.0""" % self.norb
         if self.complex:
             muimp = t_osos_tensor
         else:
-            g0inviw = np.real(g0inviw)
             fiw = np.real(fiw)
             fmom = np.real(fmom)
             ftau = np.real(ftau)
             muimp = np.real(t_osos_tensor)
             U_ijkl = np.real(U_ijkl)
+
+        ### w2dynamics builds the interaction from its own configuration file,
+        ### which is only used for the moments of the self-energy, while the
+        ### solver itself uses the umatrix attribute; replace both by the
+        ### interaction from TRIQS
+        atom.dd_int.u_matrix = U_ijkl.reshape([self.norb, 2] * 4)
 
         ### here the properties of the impurity will be defined
         imp_problem = impurity.ImpurityProblem(
@@ -354,89 +443,73 @@ TaudiffMax = -1.0""" % self.norb
         ### feed impurity problem into solver
         solver.set_problem(imp_problem)
 
+        def bs_diagflat(bs_array):
+            """Return an array with a shape extended compared to
+            that of the argument by doubling the first two axes and
+            fill it such that the returned array is diagonal with
+            respect to both pairs (axes 1 and 3 and axes 2 and 4).
+            """
+            shape_bsonly = bs_array.shape[0:2]
+            bsbs_shape = shape_bsonly + bs_array.shape
+            bsbs_array = np.zeros(bsbs_shape, dtype=bs_array.dtype)
+            for b in range(bs_array.shape[0]):
+                for s in range(bs_array.shape[1]):
+                    bsbs_array[b, s, b, s, ...] = bs_array[b, s, ...]
+            return bsbs_array
+
+        def z_space_gtau(result):
+            """Read the Green's function from the partition function space.
+            w2dynamics only fills the full accumulator for an offdiagonal
+            hybridization."""
+            if cfg["QMC"]["offdiag"] == 0:
+                return result.other["gtau"].apply(bs_diagflat)
+            return result.other["gtau-full"]
+
         ### solve impurity problem
         mccfgcontainer = []
+        siw_method = cfg["General"]["SelfEnergy"]
+        smom_method = cfg["General"]["siw_moments"]
         iter_no = 1
+        gtau = giw = siw = smom = None
         if measure_G_tau or measure_G_l or measure_pert_order:
 
             if self.complex:
                 solver.set_problem(imp_problem)
-                solver.umatrix = U_ijkl
                 result = solver.solve(mccfgcontainer)
-                gtau = result.other["gtau-full"]
+                result.postprocessing(siw_method, smom_method)
+                gtau = z_space_gtau(result)
+                giw = result.giw
+                siw = result.siw
+                smom = result.smom
 
-            elif not worm:
+            elif not wormsampling:
 
                 solver.set_problem(imp_problem)
-                solver.umatrix = U_ijkl
                 result = solver.solve(iter_no, mccfgcontainer)
-                gtau = result.other["gtau-full"]
+                result.postprocessing(siw_method, smom_method)
+                gtau = z_space_gtau(result)
+                giw = result.giw
+                siw = result.siw
+                smom = result.smom
 
-            elif worm_get_sector_index(cfg['QMC']) == 2:
+            elif worm_get_sector_index(cfg['QMC']) in [2, 3, 10]:
 
-                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
+                ### w2dynamics samples the estimator of the sector for every
+                ### component and assembles the Green's function from them. The
+                ### self-energy always comes from the Dyson equation, also in
+                ### the improved estimator code paths, so ask for it directly.
+                result, result_worm = solver.solve_worm(iter_no, log_function=mpi.report)
+                result.postprocessing("dyson", smom_method)
 
-                from w2dyn.auxiliaries.compound_index import index2component_general
+                giw = result.giw
+                siw = result.siw
+                smom = result.smom
 
-                components = []
-
-                for comp_ind in range(1, (2*self.norb)**2+1):
-
-                    tmp = index2component_general(self.norb, 2, int(comp_ind))
-
-                    ### check if ftau is nonzero
-
-                    bands = tmp[1]
-                    spins = tmp[2]
-
-                    b1 = bands[0]
-                    b2 = bands[1]
-                    s1 = spins[0]
-                    s2 = spins[1]
-
-                    all_zeros = not np.any(np.abs(ftau[:, b1, s1, b2, s2]) > 1e-5)
-
-                    if not all_zeros:
-                        components = np.append(components, comp_ind)
-
-                if mpi.rank == 0:
-                    print('worm components to measure: ', components)
-
-                ### divide either max_time Nmeas among the nonzero components
-                if max_time <= 0:
-                    cfg["QMC"]["Nmeas"] = int(cfg["QMC"]["Nmeas"] / float(len(components)))
-                else:
-                    cfg["QMC"]["measurement_time"] = int(float(max_time) / float(len(components)))
-
-                for comp_ind in components:
-
-                    solver.set_problem(imp_problem)
-                    solver.umatrix = U_ijkl
-                    result_aux, result = solver.solve_component(1, 2, comp_ind, mccfgcontainer)
-
-                    for i in list(result.other.keys()):
-
-                        if "gtau-worm" in i:
-                            gtau_name = i
-
-                    tmp = index2component_general(self.norb, 2, int(comp_ind))
-
-                    ### check if ftau is nonzero
-
-                    bands = tmp[1]
-                    spins = tmp[2]
-
-                    b1 = bands[0]
-                    b2 = bands[1]
-                    s1 = spins[0]
-                    s2 = spins[1]
-
-                    # Remove axis 0 from local samples by averaging, so
-                    # no data remains unused even if there is more than
-                    # one local sample (should not happen)
-                    gtau[0, b1, s1, b2, s2, :] = result.other[gtau_name]
-
-                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
+                if cfg["QMC"]["WormMeasGtau"] != 0:
+                    gtau = stat.DistributedSample(
+                        worm_gtau(result_worm, cfg["QMC"]["WormComponents"],
+                                  self.norb, self.n_tau),
+                        mpi_comm, ntotal=mpi.size)
 
             elif cfg["QMC"]["FourPnt"] == 8: # Know that: worm == True and worm_get_sector_index(cfg['QMC']) != 2
 
@@ -452,10 +525,6 @@ TaudiffMax = -1.0""" % self.norb
                 g4iw_shape = (1, len(fmesh), len(fmesh), len(bmesh))
 
                 self.G2_worm_components = []
-
-                # Not used but has to be created..
-                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
-                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
 
                 # Required variables for the w2dynamics DMFT interface
                 iimp = 0
@@ -490,7 +559,6 @@ TaudiffMax = -1.0""" % self.norb
                         print('='*72)
 
                     solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
-                    solver.umatrix = U_ijkl
                     result_gen, result_comp = \
                         solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
                     g4iw_keys = [ key for key in result_comp.other.keys() if 'g4iw-worm' in key ]
@@ -547,10 +615,6 @@ TaudiffMax = -1.0""" % self.norb
 
                 self.GF_worm_components = []
 
-                # Not used but has to be created..
-                gtau = np.zeros(shape=(1, self.norb, 2, self.norb, 2, 2*self.n_tau))
-                gtau = stat.DistributedSample(gtau, mpi_comm, ntotal=mpi.size)
-
                 # Required variables for the w2dynamics DMFT interface
                 iimp = 0
                 iter_no = 0
@@ -584,8 +648,6 @@ TaudiffMax = -1.0""" % self.norb
                         print('='*72)
 
                     solver.set_problem(imp_problem)
-
-                    solver.umatrix = U_ijkl
                     result_gen, result_comp = \
                         solver.solve_comp_stats(iter_no, worm_sector, component, mccfgcontainer)
                     keys = [ key for key in result_comp.other.keys() if result_key in key ]
@@ -603,6 +665,8 @@ TaudiffMax = -1.0""" % self.norb
                     gf_err.data[:] = gf.stderr()
 
                     self.GF_worm_components.append((component, gf_mean, gf_err))
+            else:
+                raise NotImplementedError("The chosen combination of parameters is not supported")
 
 
         # TRIQS/cthyb like interface to sample all components of the two-particle Green's function
@@ -635,7 +699,6 @@ TaudiffMax = -1.0""" % self.norb
                     print('Sampling worm component {}'.format(icomponent))
 
                 solver.set_problem(imp_problem, cfg["QMC"]["FourPnt"])
-                solver.umatrix = U_ijkl
                 res_gen, res_g4comp = solver.solve_comp_stats(1, 4,
                                                               icomponent,
                                                               mccfgcontainer)
@@ -663,40 +726,22 @@ TaudiffMax = -1.0""" % self.norb
             return g4iw
 
 
-        def bs_diagflat(bs_array):
-            """Return an array with a shape extended compared to
-            that of the argument by doubling the first two axes and
-            fill it such that the returned array is diagonal with
-            respect to both pairs (axes 1 and 3 and axes 2 and 4).
-            """
-            shape_bsonly = bs_array.shape[0:2]
-            bsbs_shape = shape_bsonly + bs_array.shape
-            bsbs_array = np.zeros(bsbs_shape, dtype=bs_array.dtype)
-            for b in range(bs_array.shape[0]):
-                for s in range(bs_array.shape[1]):
-                    bsbs_array[b, s, b, s, ...] = bs_array[b, s, ...]
-            return bsbs_array
-
-
-
         ### here comes the function for conversion w2dyn --> triqs
-        if measure_G_tau:
-            if cfg["QMC"]["offdiag"] == 0 and worm == 0:
-                gtau = result.other["gtau"].apply(bs_diagflat)
-
+        if gtau is not None:
             self.G_tau, self.G_tau_error = w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(
                 gtau, self.beta, self.gf_struct)
 
-            self.G_iw = BlockGf(mesh=self.iw_mesh, gf_struct=self.gf_struct)
+        if giw is not None:
+            self.G_iw, self.G_iw_error = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(
+                giw, self.n_iw, self.beta, self.gf_struct)
 
-            ### I will use the FFT from triqs here...
-            for name, g in self.G_tau:
-                bl_size = g.target_shape[0]
-                known_moments = np.zeros((4, bl_size, bl_size), dtype=complex)
-                for i in range(bl_size):
-                    known_moments[1,i,i] = 1
+            self.Sigma_iw, self.Sigma_iw_error = w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(
+                siw, self.n_iw, self.beta, self.gf_struct)
 
-                self.G_iw[name].set_from_fourier(g, known_moments)
+            ### high frequency moments of the self-energy, from the one- and
+            ### two-particle density matrix instead of from a fit of Sigma_iw
+            self.Sigma_moments = w2dyn_ndarray_to_triqs_moments_mosos(
+                smom, self.gf_struct)
 
         ### add perturbation order as observable
         #print 'measure_pert_order ', measure_pert_order
@@ -704,8 +749,8 @@ TaudiffMax = -1.0""" % self.norb
             self.hist = result.other["hist"]
             #print 'hist.shape', hist.shape
 
-        ### GF in Legendre expansion
-        if measure_G_l:
+        ### GF in Legendre expansion, only sampled in the partition function space
+        if measure_G_l and not wormsampling:
             self.G_l = result.other["gleg-full"]
             #print 'G_l.shape', G_l.shape
 

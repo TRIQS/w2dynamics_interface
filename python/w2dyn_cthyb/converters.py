@@ -267,30 +267,21 @@ def triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G_iw):
     niw = len(iw)
     np.testing.assert_almost_equal(np.imag(iw[niw//2]) * beta, np.pi)
 
-    g_stoo = np.array([ G_iw.data for block_name, G_iw in G_iw ])
-    nblocks, nt, size1, size2 = g_stoo.shape
-
-    assert( size1 == size2 )
-
-    ### the general back-conversion of the numpy arrays to triqs objects will
-    ### anyway be ugly, therefore it does not matter for this
-    ### conversion either....
-
-    g_tff = np.zeros(shape=(niw,full_size,full_size),dtype=G_iw.data.dtype)
+    g_tff = np.zeros(shape=(niw,full_size,full_size),dtype=complex)
 
     ### make one big blockdiagonal matrix
     offset = 0
-    for nb in range(nblocks):
-
-        size_block = g_stoo[nb,:,:,:].shape[-1]
-        g_tff[:,offset:offset+size_block,offset:offset+size_block] = g_stoo[nb,:,:,:]
+    for name, g in G_iw:
+        size_block = g.data.shape[-1]
+        g_tff[:,offset:offset+size_block,offset:offset+size_block] = g.data
 
         offset += size_block
 
-    ### shape into spin structure
-    g_tosos = g_tff.reshape(niw,full_size//2,2,full_size//2,2)
+    ### spin is slow running index, but in w2dyn it is fastest running index
+    g_wosos = g_tff.reshape(niw,2,full_size//2,2,full_size//2)
+    g_wosos = g_wosos.transpose(0,2,1,4,3)
 
-    return g_tosos, beta, niw
+    return g_wosos, beta, niw
 
 # ----------------------------------------------------------------------
 def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw_wosos, n_iw, beta, gf_struct):
@@ -324,8 +315,13 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw_wosos, n_iw, beta, gf_struct)
         norbs = giw.shape[1]
         nspin = giw.shape[2]
         nflavour = norbs * nspin
-        giw = giw.reshape(2*n_iw, nflavour, nflavour)
-        giw_err = giw_err.reshape(2*n_iw, nflavour, nflavour)
+
+        ### spin is fastest running index in w2dyn, but slowest in triqs
+        def to_flavours(g):
+            return g.transpose(0,2,1,4,3).reshape(2*n_iw, nflavour, nflavour)
+
+        giw = to_flavours(giw)
+        giw_err = to_flavours(giw_err)
     elif len(giw.shape) == 3:
         nflavour = giw.shape[1]
     else:
@@ -357,6 +353,42 @@ def w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw(giw_wosos, n_iw, beta, gf_struct)
         offset += size_block
 
     return G_iw_data, G_iw_error
+
+
+# ----------------------------------------------------------------------
+def w2dyn_ndarray_to_triqs_moments_mosos(smom_mosos, gf_struct):
+
+    """ Convert a W2Dynamics ndarray format with indices [mosos]
+    where m is the moment, o is orbital, s is spin index
+    to the high frequency moments of a block Triqs response function
+
+    Takes:
+    smom_mosos : moments as DistributedSample
+    gf_struct: block structure of the triqs GF
+
+    Returns:
+    dict : the moments of every block, the zeroth one being the Hartree shift
+    """
+
+    smom = smom_mosos.mean()
+
+    n_mom, norbs, nspin = smom.shape[:3]
+    nflavour = norbs * nspin
+
+    ### spin is fastest running index in w2dyn, but slowest in triqs
+    smom = smom.transpose(0,2,1,4,3).reshape(n_mom, nflavour, nflavour)
+
+    ### read out blocks from full w2dyn matrices
+    moments = {}
+    offset = 0
+    for name, size_block in gf_struct:
+
+        moments[name] = smom[:, offset:offset+size_block,
+                                offset:offset+size_block].copy()
+
+        offset += size_block
+
+    return moments
 
 
 def w2dyn_g4iw_worm_to_triqs_block2gf(g4iw, beta, norb, gf_struct,

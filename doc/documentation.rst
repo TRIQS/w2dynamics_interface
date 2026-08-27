@@ -19,6 +19,7 @@ User guide
 
    guide/aim.rst
    guide/aim_G4iw_ph.rst
+   guide/improved_estimators.rst
    guide/settingparameters
    guide/additional_remarks
 
