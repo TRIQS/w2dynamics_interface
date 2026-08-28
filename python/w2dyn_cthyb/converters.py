@@ -241,6 +241,49 @@ def w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau(gtau_osost, beta, gf_struct):
     return G_tau_data, G_tau_error
 
 # ----------------------------------------------------------------------
+def w2dyn_ndarray_to_triqs_BlockGF_legendre(gleg_full_bsbsl, beta, gf_struct):
+
+    """ Convert a DistributedSample of gleg-full data (indices [bsbsl],
+    b=band, s=spin, l=Legendre index) to a Triqs Legendre BlockGF. """
+
+    gleg = gleg_full_bsbsl.mean()
+    gleg_err = gleg_full_bsbsl.stderr()
+
+    assert( len(gleg.shape) == 5 )
+
+    norbs, nspin, _, _, n_l = gleg.shape
+    shape = (norbs * nspin, norbs * nspin, n_l)
+    gleg, gleg_err = gleg.reshape(shape), gleg_err.reshape(shape)
+
+    from triqs.gf import MeshLegendre, BlockGf
+
+    l_mesh = MeshLegendre(beta, 'Fermion', n_l)
+
+    G_l_data = BlockGf(mesh=l_mesh, gf_struct=gf_struct)
+    G_l_error = BlockGf(mesh=l_mesh, gf_struct=gf_struct)
+
+    gleg = exchange_fastest_running_index_ffw(gleg)
+    gleg_err = exchange_fastest_running_index_ffw(gleg_err)
+
+    offset = 0
+    for name, _ in G_l_data:
+
+        size1, size2 = G_l_data[name].target_shape
+        assert( size1 == size2 )
+        size_block = size1
+
+        gleg_block = gleg[offset:offset+size_block, offset:offset+size_block, :]
+        gleg_err_block = gleg_err[offset:offset+size_block, offset:offset+size_block, :]
+
+        # sign convention matches w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
+        G_l_data[name].data[:] = -gleg_block.transpose(2, 0, 1)
+        G_l_error[name].data[:] = -gleg_err_block.transpose(2, 0, 1)
+
+        offset += size_block
+
+    return G_l_data, G_l_error
+
+# ----------------------------------------------------------------------
 def triqs_gf_to_w2dyn_ndarray_g_wosos_beta_niw(G_iw):
 
     """ Convert a spin-block Triqs imaginary frequenca response function

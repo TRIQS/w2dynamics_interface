@@ -40,6 +40,7 @@ from w2dyn.auxiliaries import hdfout
 from .converters import NO_to_Nos
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_tau_beta_ntau
 from .converters import w2dyn_ndarray_to_triqs_BlockGF_iw_beta_niw
+from .converters import w2dyn_ndarray_to_triqs_BlockGF_legendre
 from .converters import triqs_gf_to_w2dyn_ndarray_g_tosos_beta_ntau
 from .converters import w2dyn_g4iw_worm_to_triqs_block2gf
 from .extractor import extract_deltaiw_and_tij_from_G0
@@ -133,6 +134,10 @@ class Solver():
         measure_g4iw_ph = params_kw.pop("measure_G2_iw_ph", False)
         n4iwf = params_kw.pop("measure_G2_n_fermionic", 30)
         n4iwb = params_kw.pop("measure_G2_n_bosonic", 30) - 1
+
+        # w2dynamics does not measure gleg in worm mode
+        if measure_G_l and worm:
+            raise RuntimeError("measure_G_l is not supported together with worm sampling")
 
         ### Andi: the definition in the U-Matrix in w2dyn is
         ### 1/2 \sum_{ijkl} U_{ijkl} cdag_i cdag_j c_l c_k
@@ -706,8 +711,14 @@ TaudiffMax = -1.0""" % self.norb
 
         ### GF in Legendre expansion
         if measure_G_l:
-            self.G_l = result.other["gleg-full"]
-            #print 'G_l.shape', G_l.shape
+            if cfg["QMC"]["offdiag"] == 0:
+                # diagonal mode: only "gleg" is filled, not "gleg-full"
+                gleg = result.other["gleg"].apply(bs_diagflat)
+            else:
+                gleg = result.other["gleg-full"]
+
+            self.G_l, self.G_l_error = w2dyn_ndarray_to_triqs_BlockGF_legendre(
+                gleg, self.beta, self.gf_struct)
 
         if cfg["QMC"]["FourPnt"] == 8 or \
            cfg["QMC"]["WormMeasP3iwPH"] == 1 or \
